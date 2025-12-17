@@ -2,6 +2,9 @@
   "type": "module",
   "name": "everpay-backend",
   "version": "1.0.0",
+"engines": {
+  "node": "20.x"
+}
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
