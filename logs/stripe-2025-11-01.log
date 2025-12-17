@@ -1,0 +1,128 @@
+[2025-11-01T00:02:28.031Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:02:28.546Z] INFO: ✅ Checkout session created: cs_test_a1NMg4dcKH8AtN96oN55PMjjtqgPXSxXuNDywQkhS1HjUz5sg9au1RkHrY
+[2025-11-01T00:09:41.749Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:09:42.269Z] INFO: ✅ Checkout session created: cs_test_a1SXdxWVZ0AiyYEshUgayTo2VaeRNUC6XXSy5CnWNokUsaTmC1cH6n3YMw
+[2025-11-01T00:09:54.797Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:09:55.177Z] INFO: ✅ Checkout session created: cs_test_a1lc9R8uIxjCCiLMlg91K0i8b1gtK9rWostfAIzFZ2oXpR3vSyK0OzD6gY
+[2025-11-01T00:10:10.359Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:10:10.770Z] INFO: ✅ Checkout session created: cs_test_a1nbpvfHV2awPoV7Ca3HFLcPSQhMERHhKCMZrCS8yVDXk6FSE2gJ0gJF0v
+[2025-11-01T00:22:17.708Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:22:18.217Z] INFO: ✅ Checkout session created: cs_test_a1zuvQ6n70Ifc5fllN8WP5sqt8sq9ONGXKRq0OvXq1Yhc4DLioZNjJf4QU
+[2025-11-01T00:31:02.170Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:31:02.717Z] INFO: ✅ Checkout session created: cs_test_a1a4kcb0SQ6634DooLkJKxXu8trVj28hrj2TXu62Np0cSYTGp2yhmrxBzS
+[2025-11-01T00:38:51.589Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T00:38:52.222Z] INFO: ✅ Checkout session created: cs_test_a1R8M5sEWN6NYEOFWZfYMoEJzMfbsjSn3x41v6gHTdiVKYBjYLzkBnP5S0
+[2025-11-01T20:11:05.996Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T20:11:06.553Z] INFO: ✅ Checkout session created: cs_test_a1qu1uU4c1gNABeup4Drp5REmYgrG5JxSijezxTCA093twWOo3iHvLRxFo
+[2025-11-01T20:22:11.691Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T20:22:12.228Z] INFO: ✅ Checkout session created: cs_test_a1Tn2tzobgNkTNPM5tmMRbNLmeUQmFMCDYCGu7daKgYNwzCFb2Qo9PlK6u
+[2025-11-01T21:05:53.835Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T21:05:54.415Z] INFO: ✅ Checkout session created: cs_test_a11X61qRxHmI6qHv8gKWBD7J1P7BounOFbgnBWzA6FerU28D4d0h4nvdhS
+[2025-11-01T21:09:57.287Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T21:09:57.872Z] INFO: ✅ Checkout session created: cs_test_a14hpbCbQJ7vYg7NgmmccJkndCQQZbMPstg97uNSP6NIj8RgqLpObNphnn
+[2025-11-01T22:10:18.137Z] ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.141Z] INFO: ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.141Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-01T22:10:18.141Z] INFO: 💸 PaymentIntent succeeded: pi_3SOn047E8q6IuaPu0SW1Sodg
+[2025-11-01T22:10:18.145Z] ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.146Z] INFO: ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.146Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-01T22:10:18.146Z] INFO: 💳 Charge succeeded: ch_3SOn047E8q6IuaPu0ut2D9FK
+[2025-11-01T22:10:18.170Z] ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.170Z] INFO: ✅ Webhook verified successfully!
+[2025-11-01T22:10:18.171Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-01T22:10:18.171Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-01T22:10:20.482Z] ✅ Webhook verified successfully!
+[2025-11-01T22:10:20.482Z] INFO: ✅ Webhook verified successfully!
+[2025-11-01T22:10:20.540Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-01T22:10:20.540Z] INFO: 🔄 Charge updated: ch_3SOn047E8q6IuaPu0ut2D9FK
+[2025-11-01T22:12:34.207Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:12:34.718Z] INFO: ✅ Checkout session created: cs_test_a1viOuFVoPADlkQJ4Iuareg5iAq7wdPH4schpPnTrYRsE8Kht7obmKETAI
+[2025-11-01T22:22:31.194Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:22:31.705Z] INFO: ✅ Checkout session created: cs_test_a1lAjDp6zr70GfUm5ySk9Sv73LTJ0WQNtw15W5qPpkrPr11rOJ5G9utnOz
+[2025-11-01T22:23:05.920Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:23:06.260Z] INFO: ✅ Checkout session created: cs_test_a1wQBWvz5HF8D7fYg0hseTyOwq9rNMflnGpJoEsJyWcuyi5oAkLgK2UhX1
+[2025-11-01T22:33:23.343Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:33:23.973Z] INFO: ✅ Checkout session created: cs_test_a1n2utovRBj5dqAI4LLGx9m8bmQqGq5JblrndB8xhku5mCDiEvJ49Rhhhj
+[2025-11-01T22:43:04.375Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:43:04.883Z] INFO: ✅ Checkout session created: cs_test_a1zB7sphXBSqlSVvA0zxzQYLFMTn02ttOX8xmKMtmSJH74zjoxbUx4c1uM
+[2025-11-01T22:55:42.097Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:55:42.586Z] INFO: ✅ Checkout session created: cs_test_a11ls9s2zhAraK5ry4LY5c7bYV652HMruJU1TeXautRpUJ37U4uw7npnfd
+[2025-11-01T22:55:56.015Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:55:56.392Z] INFO: ✅ Checkout session created: cs_test_a156d9lwG3OJMqB8ixE3SePbrJKZ55J2UoA0tpBgRiFHRoM5HreT0gGD8P
+[2025-11-01T22:57:16.777Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T22:57:17.214Z] INFO: ✅ Checkout session created: cs_test_a1QomW794YUZUlNQzB4oKH9sVJRcJ4UvJNXeaf4aKVJ71G4AXHilGclSuY
+[2025-11-01T23:06:46.750Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-01T23:06:47.274Z] INFO: ✅ Checkout session created: cs_test_a1c1aYYhRveZub5yHKlo1ZTJ6QS2vIysrwu4w4EZd4paB6bVMJ9szmhVxg

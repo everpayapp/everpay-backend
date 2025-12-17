@@ -1,0 +1,54 @@
+[2025-11-05T09:47:23.752Z] ✅ Webhook verified successfully!
+[2025-11-05T09:47:23.757Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T09:47:23.757Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-05T09:47:23.758Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-05T09:47:39.458Z] ✅ Webhook verified successfully!
+[2025-11-05T09:47:39.459Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T09:47:39.459Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-05T09:47:39.459Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-05T14:42:36.023Z] 
+-------------------------------------
+/pay route triggered for £1465.00
+-------------------------------------
+[2025-11-05T14:42:36.618Z] INFO: ✅ Checkout session created: cs_test_a11lNktFNdJ7xSFLgQKEXmGHqNZfwr0qtTFn8TP1zF0DsABJIkJ3OjE9MV
+[2025-11-05T14:42:44.933Z] ✅ Webhook verified successfully!
+[2025-11-05T14:42:44.934Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T14:42:44.935Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-05T14:42:44.935Z] INFO: 💳 Charge succeeded: ch_3SQ7v57E8q6IuaPu1wdwGMiI
+[2025-11-05T14:42:44.946Z] ✅ Webhook verified successfully!
+[2025-11-05T14:42:44.947Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T14:42:44.947Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-05T14:42:44.947Z] INFO: 💸 PaymentIntent succeeded: pi_3SQ7v57E8q6IuaPu1HboPPDJ
+[2025-11-05T14:42:45.072Z] ✅ Webhook verified successfully!
+[2025-11-05T14:42:45.073Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T14:42:45.073Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-05T14:42:45.073Z] INFO: ✅ Checkout complete — Payment for £1465.00 GBP succeeded.
+[2025-11-05T14:42:45.107Z] ✅ Webhook verified successfully!
+[2025-11-05T14:42:45.107Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T14:42:45.107Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-05T14:42:45.108Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-05T14:42:47.232Z] ✅ Webhook verified successfully!
+[2025-11-05T14:42:47.232Z] INFO: ✅ Webhook verified successfully!
+[2025-11-05T14:42:47.232Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-05T14:42:47.233Z] INFO: 🔄 Charge updated: ch_3SQ7v57E8q6IuaPu1wdwGMiI

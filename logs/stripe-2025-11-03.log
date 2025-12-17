@@ -1,0 +1,47 @@
+[2025-11-03T00:15:52.723Z] ✅ Webhook verified successfully!
+[2025-11-03T00:15:52.734Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T00:15:52.735Z] 
+-------------------------------------
+📦 Webhook Event: balance.available
+-------------------------------------
+[2025-11-03T00:15:52.735Z] INFO: ℹ️ Unhandled event type: balance.available
+[2025-11-03T18:52:51.531Z] 
+-------------------------------------
+/pay route triggered for £5000.00
+-------------------------------------
+[2025-11-03T18:52:52.251Z] INFO: ✅ Checkout session created: cs_test_a1t9FbUQg58uDq1RzRI7ZjifcBqo73ZGhBAJmjw6kJomuBjxkj9DHpx5P7
+[2025-11-03T18:52:59.817Z] ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.818Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.818Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-03T18:52:59.819Z] INFO: 💳 Charge succeeded: ch_3SPSsB7E8q6IuaPu0EIKqUgK
+[2025-11-03T18:52:59.827Z] ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.827Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.828Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-03T18:52:59.828Z] INFO: 💸 PaymentIntent succeeded: pi_3SPSsB7E8q6IuaPu07ITSrIF
+[2025-11-03T18:52:59.906Z] ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.906Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.906Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-03T18:52:59.906Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-03T18:52:59.961Z] ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.962Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T18:52:59.962Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-03T18:52:59.962Z] INFO: ✅ Checkout complete — Payment for £5000.00 GBP succeeded.
+[2025-11-03T18:53:02.175Z] ✅ Webhook verified successfully!
+[2025-11-03T18:53:02.176Z] INFO: ✅ Webhook verified successfully!
+[2025-11-03T18:53:02.176Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-03T18:53:02.176Z] INFO: 🔄 Charge updated: ch_3SPSsB7E8q6IuaPu0EIKqUgK

@@ -1,0 +1,290 @@
+[2025-10-30T00:23:22.093Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T00:23:22.676Z] INFO: ✅ Checkout session created: cs_test_a1kTA6xzUi35O6mPV1CfvJm8bBneY4PLhcTxoDnkhPd5gI5HFvphsrS7zz
+[2025-10-30T00:23:27.505Z] ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.505Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.505Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-10-30T00:23:27.507Z] INFO: 💳 Charge succeeded: ch_3SNjeE7E8q6IuaPu1Od7rvvX
+[2025-10-30T00:23:27.515Z] ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.515Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.515Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-10-30T00:23:27.515Z] INFO: 💸 PaymentIntent succeeded: pi_3SNjeE7E8q6IuaPu1JegkSfU
+[2025-10-30T00:23:27.592Z] ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.592Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.592Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-10-30T00:23:27.592Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-10-30T00:23:27.613Z] ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.613Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T00:23:27.613Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-10-30T00:23:27.613Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-10-30T00:23:27.756Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T00:23:29.638Z] ✅ Webhook verified successfully!
+[2025-10-30T00:23:29.639Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T00:23:29.639Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-10-30T00:23:29.640Z] INFO: 🔄 Charge updated: ch_3SNjeE7E8q6IuaPu1Od7rvvX
+[2025-10-30T00:46:33.624Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T16:29:16.971Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T16:29:17.503Z] INFO: ✅ Checkout session created: cs_test_a1jnOJOdAzATIn8KqnrvCnbZ87Tyvdkd3Wb8eauXItQ33qlKrAxdyE58fB
+[2025-10-30T16:29:23.063Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T16:29:38.458Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T16:34:53.804Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T16:34:54.381Z] INFO: ✅ Checkout session created: cs_test_a10hLzBkBfMGCogz4163ikKdsnqrwm1Co6hkRtLdRrVrElKCkCcJ0lij23
+[2025-10-30T16:36:38.560Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T16:36:39.059Z] INFO: ✅ Checkout session created: cs_test_a1bpLiuqGHQUae50KCzyiE4qwTjFfxSfZrsE9pPSEvQn6dechkjezgNKX3
+[2025-10-30T18:10:20.557Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:10:21.140Z] INFO: ✅ Checkout session created: cs_test_a1lQuHqH4Z50QSdrw0rOngmPKzi2019g59dj2RAB7rsgUahqbNRo5Pau0P
+[2025-10-30T18:11:00.607Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T18:29:54.839Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:29:55.424Z] INFO: ✅ Checkout session created: cs_test_a1gGBbRQSw6hUjKCbX9RBQskkJawrgRof9JSEyw7rng3W2Mamoretj9MX6
+[2025-10-30T18:30:09.042Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T18:33:55.768Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:33:56.215Z] INFO: ✅ Checkout session created: cs_test_a1wUOofrognut75hg4dvtPRhsSoMamPJh3a8mL52djKv1P2OYJGr5ADJth
+[2025-10-30T18:35:36.370Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:35:36.887Z] INFO: ✅ Checkout session created: cs_test_a17Sr4fkF5As8tuv3ONfxnjozw3HRDaja1pEwEzkOb1mr62BazMQ3SXjWJ
+[2025-10-30T18:39:34.914Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:39:35.520Z] INFO: ✅ Checkout session created: cs_test_a1CuxUtk3rpWeOj2dVYoM9YJJidbHdvPw19HkgBVQdgDHxs0ZZOIn2DhUr
+[2025-10-30T18:41:05.756Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:41:06.378Z] INFO: ✅ Checkout session created: cs_test_a1KidSzV8Q24UPzzrfPHioPlxFSYfkhhj8FdIqIP5zeivNnF2XXntNsfdW
+[2025-10-30T18:42:50.885Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:42:51.607Z] INFO: ✅ Checkout session created: cs_test_a1BgBHS7zanc8bG8vp2h38ie6blkyykTbn1vY99oMH9dtX7GNFFqyJGKi9
+[2025-10-30T18:45:55.957Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T18:45:56.511Z] INFO: ✅ Checkout session created: cs_test_a1O6iShFhn8bpx2ETPtovk7dfNDi1HZiQtSyzQlKFayfO9UCnFQ4k4DQ4K
+[2025-10-30T19:10:27.606Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T19:21:55.141Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:21:55.735Z] INFO: ✅ Checkout session created: cs_test_a17z6bz2A9IHROOtMN4h2NlhRsJiTDB6Z1q6lXx1NYw6hg18sYZu3HqfV1
+[2025-10-30T19:24:36.280Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:24:36.827Z] INFO: ✅ Checkout session created: cs_test_a11Ln9Y17UOvOKWM2LodNI34DJp4VdhqRT5YRbOp9FKKSZurYBwToPw5iU
+[2025-10-30T19:24:46.276Z] ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.277Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.277Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-10-30T19:24:46.277Z] INFO: 💳 Charge succeeded: ch_3SO1Si7E8q6IuaPu0t9gSOue
+[2025-10-30T19:24:46.299Z] ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.301Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.302Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-10-30T19:24:46.302Z] INFO: 💸 PaymentIntent succeeded: pi_3SO1Si7E8q6IuaPu0eWixYKy
+[2025-10-30T19:24:46.328Z] ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.329Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.330Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-10-30T19:24:46.330Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-10-30T19:24:46.349Z] ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.350Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T19:24:46.350Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-10-30T19:24:46.350Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-10-30T19:24:46.556Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T19:24:48.298Z] ✅ Webhook verified successfully!
+[2025-10-30T19:24:48.300Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T19:24:48.301Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-10-30T19:24:48.302Z] INFO: 🔄 Charge updated: ch_3SO1Si7E8q6IuaPu0t9gSOue
+[2025-10-30T19:26:41.938Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:26:42.476Z] INFO: ✅ Checkout session created: cs_test_a1rTJo9AjS1BkP4bFDaXl6QMyCukZ05GiqpiFVBTeERe4kFwYsuXuAr4ZS
+[2025-10-30T19:27:38.120Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:27:38.505Z] INFO: ✅ Checkout session created: cs_test_a1YbuVTSQlOGTG4X51JFzxeQXuPqnZtqOzUEHY0WCf28DAdyWiBXy2xBlW
+[2025-10-30T19:27:43.244Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:27:43.664Z] INFO: ✅ Checkout session created: cs_test_a1Jwf6xvEB18tDFBOUhA3SOofxBQ9Ipom1sOB04PWDbyQoq8LARzoemAPH
+[2025-10-30T19:29:42.369Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T19:30:13.535Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:30:14.101Z] INFO: ✅ Checkout session created: cs_test_a1XtBHSOYu7qTgmPsFLgvxZgtoB8ESwHWntXeiQQ7SudLOxYnXeD5LsjDJ
+[2025-10-30T19:32:09.131Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:32:09.703Z] INFO: ✅ Checkout session created: cs_test_a1Nv9dbrEm5QCe9Q7APiGCqmrUcpFM4d4PSHRbry3MANftNQL59ik9d48t
+[2025-10-30T19:50:01.367Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T19:50:01.913Z] INFO: ✅ Checkout session created: cs_test_a1POqNQMwByI4DOhECaeXTURz4F2oCXiHGbXl6hJxB83R1GVhwnuX4NKWy
+[2025-10-30T20:02:49.750Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T20:02:50.346Z] INFO: ✅ Checkout session created: cs_test_a1YJpBNoqIKgD48DEtzgliq3VtZtIqL4ds9lqAvPSmGG9KmPWEr6gx8mkb
+[2025-10-30T20:18:18.401Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T20:18:19.181Z] INFO: ✅ Checkout session created: cs_test_a1nFkQ1LKCMj0uoN31AInovTXh7vAatYsiwrBCKf0ctESWkjxPJNEfBvb6
+[2025-10-30T20:19:07.789Z] ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.792Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.793Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-10-30T20:19:07.793Z] INFO: 💳 Charge succeeded: ch_3SO2JL7E8q6IuaPu0qdArK3I
+[2025-10-30T20:19:07.807Z] ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.807Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.807Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-10-30T20:19:07.808Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-10-30T20:19:07.825Z] ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.826Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.826Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-10-30T20:19:07.826Z] INFO: 💸 PaymentIntent succeeded: pi_3SO2JL7E8q6IuaPu0KSqCotX
+[2025-10-30T20:19:07.828Z] ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.828Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T20:19:07.828Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-10-30T20:19:07.828Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-10-30T20:19:07.965Z] ERROR: ❌ Webhook signature verification failed: No signatures found matching the expected signature for payload. Are you passing the raw request body you received from Stripe? 
+ If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.
+
+Learn more about webhook signing and explore webhook integration examples for various frameworks at https://docs.stripe.com/webhooks/signature
+
+[2025-10-30T20:19:09.671Z] ✅ Webhook verified successfully!
+[2025-10-30T20:19:09.671Z] INFO: ✅ Webhook verified successfully!
+[2025-10-30T20:19:09.671Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-10-30T20:19:09.671Z] INFO: 🔄 Charge updated: ch_3SO2JL7E8q6IuaPu0qdArK3I
+[2025-10-30T21:54:23.159Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T21:54:23.717Z] INFO: ✅ Checkout session created: cs_test_a1hDtQ3QWSz8PNeeS13ktGjSJxNkCwlUJtMBH1PileHMD0pHCiDqNtitCH
+[2025-10-30T22:10:31.556Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T22:10:32.247Z] INFO: ✅ Checkout session created: cs_test_a1uIX8wQSzO25phKiltUUPRBc97SYHwBalRLZNL7BFaBLIZyuudDK5f5Yy
+[2025-10-30T22:12:01.904Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T22:12:02.449Z] INFO: ✅ Checkout session created: cs_test_a1CHQqECQXjNTKTCu2RhqlhvPDcdw45OGz3jtrYwt70wM1MmnAOLcjoDxY
+[2025-10-30T22:12:15.703Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T22:12:16.051Z] INFO: ✅ Checkout session created: cs_test_a1zLbJvdH0pktysX4akaavmiFEtA3ZVEjSDdYZ0GTWztjBkOBntF5Yw83k
+[2025-10-30T22:18:29.557Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-10-30T22:18:30.110Z] INFO: ✅ Checkout session created: cs_test_a1tg1YTW1P9jfNSI2KOMQM0iFAJLg2uOThnpWjSDQltu7oMCev6lPC5TSx

@@ -1,0 +1,386 @@
+[2025-11-02T00:12:00.236Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-02T00:12:00.797Z] INFO: ✅ Checkout session created: cs_test_a1XE1LZkeH4Q4veyylOTzfQw3C8PGLBpUxYeD5vEJLOlcgR1sxFy2oWkUo
+[2025-11-02T00:23:39.104Z] 
+-------------------------------------
+/pay route triggered for £1000.00
+-------------------------------------
+[2025-11-02T00:23:39.738Z] INFO: ✅ Checkout session created: cs_test_a13dydWP35lYmq0Uv7EB8SXrdTwxBpGKl0fI68P8BRjhWYixsBx2nnf52I
+[2025-11-02T11:13:21.684Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-02T11:13:22.367Z] INFO: ✅ Checkout session created: cs_test_a1o679ST6OsyjrkPp8bDsQsJofQlBjvykavxg7jCr6VXqMSNBmWVJ5ud27
+[2025-11-02T11:22:25.125Z] 
+-------------------------------------
+/pay route triggered for £2000.00
+-------------------------------------
+[2025-11-02T11:22:25.751Z] INFO: ✅ Checkout session created: cs_test_a1ccmPPspBZ2cFFAmf2bn5ALDsl6qNJJklPPPXe4nZKMyJjG3NSvRPqMUK
+[2025-11-02T11:22:30.935Z] ✅ Webhook verified successfully!
+[2025-11-02T11:22:30.936Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T11:22:30.937Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T11:22:30.937Z] INFO: 💳 Charge succeeded: ch_3SOzMf7E8q6IuaPu0SWrn0rR
+[2025-11-02T11:22:30.981Z] ✅ Webhook verified successfully!
+[2025-11-02T11:22:30.981Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T11:22:30.982Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T11:22:30.982Z] INFO: 💸 PaymentIntent succeeded: pi_3SOzMf7E8q6IuaPu0l08hYQr
+[2025-11-02T11:22:31.003Z] ✅ Webhook verified successfully!
+[2025-11-02T11:22:31.003Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T11:22:31.004Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T11:22:31.004Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T11:22:31.082Z] ✅ Webhook verified successfully!
+[2025-11-02T11:22:31.082Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T11:22:31.083Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T11:22:31.084Z] INFO: ✅ Checkout complete — Payment for £2000.00 GBP succeeded.
+[2025-11-02T11:22:33.216Z] ✅ Webhook verified successfully!
+[2025-11-02T11:22:33.217Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T11:22:33.217Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T11:22:33.217Z] INFO: 🔄 Charge updated: ch_3SOzMf7E8q6IuaPu0SWrn0rR
+[2025-11-02T12:42:38.224Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-02T12:42:38.777Z] INFO: ✅ Checkout session created: cs_test_a1FTJixJUVePDpIkwTROllpHpzFtO9BYoe3QHoao5ianDqdI2c5uWpAHJe
+[2025-11-02T12:42:44.733Z] ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.734Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.734Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T12:42:44.735Z] INFO: 💳 Charge succeeded: ch_3SP0cJ7E8q6IuaPu07b8i7WB
+[2025-11-02T12:42:44.759Z] ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.760Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.760Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T12:42:44.760Z] INFO: 💸 PaymentIntent succeeded: pi_3SP0cJ7E8q6IuaPu0vahsvMB
+[2025-11-02T12:42:44.857Z] ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.858Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.858Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T12:42:44.858Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T12:42:44.881Z] ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.881Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T12:42:44.881Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T12:42:44.881Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-11-02T12:42:47.026Z] ✅ Webhook verified successfully!
+[2025-11-02T12:42:47.026Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T12:42:47.026Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T12:42:47.027Z] INFO: 🔄 Charge updated: ch_3SP0cJ7E8q6IuaPu07b8i7WB
+[2025-11-02T14:10:25.508Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-02T14:10:26.107Z] INFO: ✅ Checkout session created: cs_test_a1zPB3MGeXvNnRH0EUks6aNW9zX6joHk22Xy2DlrFUik0W48h6HQQMZagM
+[2025-11-02T14:10:32.451Z] ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.452Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.452Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T14:10:32.453Z] INFO: 💳 Charge succeeded: ch_3SP1zH7E8q6IuaPu1NMmefvu
+[2025-11-02T14:10:32.491Z] ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.491Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.492Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T14:10:32.492Z] INFO: 💸 PaymentIntent succeeded: pi_3SP1zH7E8q6IuaPu15tTRCJO
+[2025-11-02T14:10:32.709Z] ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.709Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.709Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T14:10:32.709Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T14:10:32.880Z] ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.880Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:10:32.880Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T14:10:32.881Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-11-02T14:10:34.703Z] ✅ Webhook verified successfully!
+[2025-11-02T14:10:34.704Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:10:34.704Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T14:10:34.704Z] INFO: 🔄 Charge updated: ch_3SP1zH7E8q6IuaPu1NMmefvu
+[2025-11-02T14:44:52.077Z] 
+-------------------------------------
+/pay route triggered for £1.99
+-------------------------------------
+[2025-11-02T14:44:52.730Z] INFO: ✅ Checkout session created: cs_test_a1lxpNlHXWTgN82jzKddtbnQDKqvmpWsuRF54CuQorG03IDsgFwYXCG0FI
+[2025-11-02T14:45:00.578Z] ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.578Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.579Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T14:45:00.579Z] INFO: 💳 Charge succeeded: ch_3SP2Wb7E8q6IuaPu1JJLqf7T
+[2025-11-02T14:45:00.710Z] ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.711Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.711Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T14:45:00.712Z] INFO: ✅ Checkout complete — Payment for £1.99 GBP succeeded.
+[2025-11-02T14:45:00.795Z] ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.795Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.795Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T14:45:00.797Z] INFO: 💸 PaymentIntent succeeded: pi_3SP2Wb7E8q6IuaPu1zfnPkpa
+[2025-11-02T14:45:00.799Z] ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.799Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:45:00.800Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T14:45:00.800Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T14:45:01.311Z] ✅ Webhook verified successfully!
+[2025-11-02T14:45:01.311Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:45:01.312Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T14:45:01.312Z] INFO: 🔄 Charge updated: ch_3SP2Wb7E8q6IuaPu1JJLqf7T
+[2025-11-02T14:45:57.992Z] 
+-------------------------------------
+/pay route triggered for £500.00
+-------------------------------------
+[2025-11-02T14:45:58.371Z] INFO: ✅ Checkout session created: cs_test_a1Y9QMkXIOeBtV2tLYqxUVeIjmEfwqIGbTdNeNu9HFzdhj69EERkdtYKFg
+[2025-11-02T14:46:03.357Z] ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.357Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.358Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T14:46:03.359Z] INFO: 💸 PaymentIntent succeeded: pi_3SP2Xe7E8q6IuaPu0fDHwHET
+[2025-11-02T14:46:03.419Z] ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.421Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.422Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T14:46:03.422Z] INFO: ✅ Checkout complete — Payment for £500.00 GBP succeeded.
+[2025-11-02T14:46:03.463Z] ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.463Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:46:03.464Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T14:46:03.464Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T14:46:04.556Z] ✅ Webhook verified successfully!
+[2025-11-02T14:46:04.556Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:46:04.557Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T14:46:04.557Z] INFO: 💳 Charge succeeded: ch_3SP2Xe7E8q6IuaPu0Rju8Dba
+[2025-11-02T14:46:05.609Z] ✅ Webhook verified successfully!
+[2025-11-02T14:46:05.609Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T14:46:05.610Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T14:46:05.610Z] INFO: 🔄 Charge updated: ch_3SP2Xe7E8q6IuaPu0Rju8Dba
+[2025-11-02T16:15:21.181Z] 
+-------------------------------------
+/pay route triggered for £10000.00
+-------------------------------------
+[2025-11-02T16:15:21.802Z] INFO: ✅ Checkout session created: cs_test_a1yFd9DG6huTkydoWpD3ZrgojKMmvPbErAGZVmHCA781JhvYye0m7AwCE9
+[2025-11-02T16:15:29.471Z] ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.471Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.473Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T16:15:29.473Z] INFO: 💳 Charge succeeded: ch_3SP3wC7E8q6IuaPu08PPtMei
+[2025-11-02T16:15:29.479Z] ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.479Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.479Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T16:15:29.479Z] INFO: 💸 PaymentIntent succeeded: pi_3SP3wC7E8q6IuaPu0MmQu4QL
+[2025-11-02T16:15:29.523Z] ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.523Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.523Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T16:15:29.523Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T16:15:29.558Z] ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.558Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T16:15:29.558Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T16:15:29.558Z] INFO: ✅ Checkout complete — Payment for £10000.00 GBP succeeded.
+[2025-11-02T16:15:31.915Z] ✅ Webhook verified successfully!
+[2025-11-02T16:15:31.915Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T16:15:31.916Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T16:15:31.916Z] INFO: 🔄 Charge updated: ch_3SP3wC7E8q6IuaPu08PPtMei
+[2025-11-02T19:12:29.013Z] 
+-------------------------------------
+/pay route triggered for £2000.00
+-------------------------------------
+[2025-11-02T19:12:29.746Z] INFO: ✅ Checkout session created: cs_test_a11nUabMZPaZXHVda4irtuVqkstP9RswfKTy7AbA7aJSwyduBzbhvFkN5H
+[2025-11-02T19:12:35.324Z] ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.324Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.325Z] 
+-------------------------------------
+📦 Webhook Event: charge.succeeded
+-------------------------------------
+[2025-11-02T19:12:35.327Z] INFO: 💳 Charge succeeded: ch_3SP6ha7E8q6IuaPu1cwCMgeZ
+[2025-11-02T19:12:35.357Z] ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.357Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.357Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.succeeded
+-------------------------------------
+[2025-11-02T19:12:35.357Z] INFO: 💸 PaymentIntent succeeded: pi_3SP6ha7E8q6IuaPu1wG2hEsS
+[2025-11-02T19:12:35.404Z] ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.404Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.405Z] 
+-------------------------------------
+📦 Webhook Event: payment_intent.created
+-------------------------------------
+[2025-11-02T19:12:35.405Z] INFO: ℹ️ Unhandled event type: payment_intent.created
+[2025-11-02T19:12:35.454Z] ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.454Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T19:12:35.454Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.completed
+-------------------------------------
+[2025-11-02T19:12:35.454Z] INFO: ✅ Checkout complete — Payment for £2000.00 GBP succeeded.
+[2025-11-02T19:12:37.600Z] ✅ Webhook verified successfully!
+[2025-11-02T19:12:37.601Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T19:12:37.601Z] 
+-------------------------------------
+📦 Webhook Event: charge.updated
+-------------------------------------
+[2025-11-02T19:12:37.601Z] INFO: 🔄 Charge updated: ch_3SP6ha7E8q6IuaPu1cwCMgeZ
+[2025-11-02T20:11:09.524Z] ✅ Webhook verified successfully!
+[2025-11-02T20:11:09.530Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T20:11:09.531Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T20:11:09.531Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T20:22:14.216Z] ✅ Webhook verified successfully!
+[2025-11-02T20:22:14.224Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T20:22:14.225Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T20:22:14.226Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T21:05:56.645Z] ✅ Webhook verified successfully!
+[2025-11-02T21:05:56.652Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T21:05:56.654Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T21:05:56.654Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T21:10:00.634Z] ✅ Webhook verified successfully!
+[2025-11-02T21:10:00.644Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T21:10:00.646Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T21:10:00.646Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:12:36.425Z] ✅ Webhook verified successfully!
+[2025-11-02T22:12:36.441Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:12:36.444Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:12:36.444Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:22:33.008Z] ✅ Webhook verified successfully!
+[2025-11-02T22:22:33.012Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:22:33.015Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:22:33.015Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:23:07.789Z] ✅ Webhook verified successfully!
+[2025-11-02T22:23:07.789Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:23:07.790Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:23:07.791Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:33:23.985Z] ✅ Webhook verified successfully!
+[2025-11-02T22:33:23.991Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:33:23.991Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:33:23.992Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:43:07.196Z] ✅ Webhook verified successfully!
+[2025-11-02T22:43:07.200Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:43:07.200Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:43:07.201Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:55:43.324Z] ✅ Webhook verified successfully!
+[2025-11-02T22:55:43.330Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:55:43.331Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:55:43.331Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:55:57.880Z] ✅ Webhook verified successfully!
+[2025-11-02T22:55:57.880Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:55:57.881Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:55:57.882Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T22:57:17.321Z] ✅ Webhook verified successfully!
+[2025-11-02T22:57:17.321Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T22:57:17.324Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T22:57:17.324Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
+[2025-11-02T23:06:47.298Z] ✅ Webhook verified successfully!
+[2025-11-02T23:06:47.305Z] INFO: ✅ Webhook verified successfully!
+[2025-11-02T23:06:47.306Z] 
+-------------------------------------
+📦 Webhook Event: checkout.session.expired
+-------------------------------------
+[2025-11-02T23:06:47.306Z] INFO: ℹ️ Unhandled event type: checkout.session.expired
