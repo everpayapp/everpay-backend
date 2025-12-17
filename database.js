@@ -1,13 +1,24 @@
-import Database from "better-sqlite3";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
 
-const db = new Database("everpay.db");
+// Render-safe persistent DB location
+const DB_PATH = process.env.RENDER ? "/data/everpay.db" : "everpay.db";
 
-// ---------- Creators table ----------
-db.prepare(
-  `CREATE TABLE IF NOT EXISTS creators (
+const dbPromise = open({
+  filename: DB_PATH,
+  driver: sqlite3.Database
+});
+
+// ---------- INIT ----------
+async function init() {
+  const db = await dbPromise;
+
+  // ---------- Creators table ----------
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS creators (
       username TEXT PRIMARY KEY,
       profile_name TEXT,
       bio TEXT,
@@ -20,19 +31,12 @@ db.prepare(
       theme_end TEXT,
       email TEXT,
       password_hash TEXT
-  )`
-).run();
+    )
+  `);
 
-// ---------- Safe add columns for older databases ----------
-try { db.prepare(`ALTER TABLE creators ADD COLUMN theme_start TEXT`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN theme_mid TEXT`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN theme_end TEXT`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN email TEXT`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN password_hash TEXT`).run(); } catch {}
-
-// ---------- Payments table ----------
-db.prepare(
-  `CREATE TABLE IF NOT EXISTS payments (
+  // ---------- Payments table ----------
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       amount INTEGER NOT NULL,
       email TEXT,
@@ -42,144 +46,157 @@ db.prepare(
       gift_name TEXT,
       anonymous INTEGER DEFAULT 0,
       gift_message TEXT
-  )`
-).run();
+    )
+  `);
+}
+
+init();
 
 // ---------- Store a payment ----------
-function storePayment(payment) {
-  return db
-    .prepare(
-      `INSERT OR REPLACE INTO payments (
-        id, amount, email, creator, status, created_at,
-        gift_name, anonymous, gift_message
-       )
-       VALUES (
-         @id, @amount, @email, @creator, @status, @created_at,
-         @gift_name, @anonymous, @gift_message
-       )`
+async function storePayment(payment) {
+  const db = await dbPromise;
+  return db.run(
+    `
+    INSERT OR REPLACE INTO payments (
+      id, amount, email, creator, status, created_at,
+      gift_name, anonymous, gift_message
     )
-    .run(payment);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    payment.id,
+    payment.amount,
+    payment.email,
+    payment.creator,
+    payment.status,
+    payment.created_at,
+    payment.gift_name,
+    payment.anonymous,
+    payment.gift_message
+  );
 }
 
-// ---------- Creator dashboard payments ----------
-function getCreatorPayments(username) {
-  return db
-    .prepare(
-      `SELECT p.*, c.profile_name
-       FROM payments p
-       LEFT JOIN creators c ON p.creator = c.username
-       WHERE p.creator = ?
-       ORDER BY datetime(p.created_at) DESC`
+// ---------- Payments ----------
+async function getPayments(limit = 100) {
+  const db = await dbPromise;
+  return db.all(
+    `
+    SELECT p.*, c.profile_name
+    FROM payments p
+    LEFT JOIN creators c ON p.creator = c.username
+    ORDER BY datetime(p.created_at) DESC
+    LIMIT ?
+    `,
+    limit
+  );
+}
+
+async function getPaymentsByCreator(username, limit = 100) {
+  const db = await dbPromise;
+  return db.all(
+    `
+    SELECT p.*, c.profile_name
+    FROM payments p
+    LEFT JOIN creators c ON p.creator = c.username
+    WHERE p.creator = ?
+    ORDER BY datetime(p.created_at) DESC
+    LIMIT ?
+    `,
+    username,
+    limit
+  );
+}
+
+async function getCreatorPayments(username) {
+  const db = await dbPromise;
+  return db.all(
+    `
+    SELECT p.*, c.profile_name
+    FROM payments p
+    LEFT JOIN creators c ON p.creator = c.username
+    WHERE p.creator = ?
+    ORDER BY datetime(p.created_at) DESC
+    `,
+    username
+  );
+}
+
+// ---------- Creators ----------
+async function getCreatorByUsername(username) {
+  const db = await dbPromise;
+  return db.get(`SELECT * FROM creators WHERE username = ?`, username);
+}
+
+async function getCreatorProfile(username) {
+  return getCreatorByUsername(username);
+}
+
+async function saveCreatorProfile(profile) {
+  const db = await dbPromise;
+  return db.run(
+    `
+    INSERT OR REPLACE INTO creators (
+      username, profile_name, bio, avatar_url, social_links,
+      theme_start, theme_mid, theme_end, updated_at,
+      email, password_hash
     )
-    .all(username);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    profile.username,
+    profile.profile_name,
+    profile.bio,
+    profile.avatar_url,
+    profile.social_links,
+    profile.theme_start,
+    profile.theme_mid,
+    profile.theme_end,
+    new Date().toISOString(),
+    profile.email,
+    profile.password_hash
+  );
 }
 
-// ---------- Business dashboard payments ----------
-function getPayments(limit = 100) {
-  return db
-    .prepare(
-      `SELECT p.*, c.profile_name
-       FROM payments p
-       LEFT JOIN creators c ON p.creator = c.username
-       ORDER BY datetime(p.created_at) DESC
-       LIMIT ?`
-    )
-    .all(limit);
+async function updateCreatorUsername(oldUsername, newUsername) {
+  const db = await dbPromise;
+  return db.run(
+    `
+    UPDATE creators
+    SET username = ?, last_username_change = ?
+    WHERE username = ?
+    `,
+    newUsername,
+    new Date().toISOString(),
+    oldUsername
+  );
 }
 
-// ---------- Payments filtered by creator ----------
-function getPaymentsByCreator(username, limit = 100) {
-  return db
-    .prepare(
-      `SELECT p.*, c.profile_name
-       FROM payments p
-       LEFT JOIN creators c ON p.creator = c.username
-       WHERE p.creator = ?
-       ORDER BY datetime(p.created_at) DESC
-       LIMIT ?`
-    )
-    .all(username, limit);
+// ---------- Auth ----------
+async function findCreatorByEmail(email) {
+  const db = await dbPromise;
+  return db.get(`SELECT * FROM creators WHERE email = ?`, email);
 }
 
-// ---------- Profile lookups ----------
-function getCreatorByUsername(username) {
-  return db
-    .prepare(`SELECT * FROM creators WHERE username = ?`)
-    .get(username);
-}
-
-function getCreatorProfile(username) {
-  return db
-    .prepare(`SELECT * FROM creators WHERE username = ?`)
-    .get(username);
-}
-
-// ---------- Save / update creator profile ----------
-function saveCreatorProfile(profile) {
-  return db
-    .prepare(
-      `INSERT OR REPLACE INTO creators (
-        username, profile_name, bio, avatar_url, social_links,
-        theme_start, theme_mid, theme_end, updated_at,
-        email, password_hash
-      )
-      VALUES (
-        @username, @profile_name, @bio, @avatar_url, @social_links,
-        @theme_start, @theme_mid, @theme_end, @updated_at,
-        @email, @password_hash
-      )`
-    )
-    .run({
-      ...profile,
-      updated_at: new Date().toISOString()
-    });
-}
-
-// ---------- Update creator username ----------
-function updateCreatorUsername(oldUsername, newUsername) {
-  return db
-    .prepare(
-      `UPDATE creators
-       SET username = ?, last_username_change = ?
-       WHERE username = ?`
-    )
-    .run(newUsername, new Date().toISOString(), oldUsername);
-}
-
-// ----------------------------------------------------
-// 🔐 SECURE AUTH HELPERS (ADDED SAFELY, NO BREAKING CHANGES)
-// ----------------------------------------------------
-
-// Find a creator using email
-function findCreatorByEmail(email) {
-  return db
-    .prepare(`SELECT * FROM creators WHERE email = ?`)
-    .get(email);
-}
-
-// Create a creator with secure hashed password (signup)
-function createCreatorWithPassword({ username, email, password, display_name }) {
+async function createCreatorWithPassword({ username, email, password, display_name }) {
+  const db = await dbPromise;
   const passwordHash = bcrypt.hashSync(password, SALT_ROUNDS);
 
-  const stmt = db.prepare(
-    `INSERT INTO creators (
-      username,
-      profile_name,
-      email,
-      password_hash
-    ) VALUES (?, ?, ?, ?)`
+  await db.run(
+    `
+    INSERT INTO creators (
+      username, profile_name, email, password_hash
+    ) VALUES (?, ?, ?, ?)
+    `,
+    username,
+    display_name,
+    email,
+    passwordHash
   );
-
-  stmt.run(username, display_name, email, passwordHash);
 
   return findCreatorByEmail(email);
 }
 
-// Optional helper: get by internal rowid (not usually needed, but safe)
-function getCreatorById(id) {
-  return db
-    .prepare(`SELECT rowid, * FROM creators WHERE rowid = ?`)
-    .get(id);
+async function getCreatorById(id) {
+  const db = await dbPromise;
+  return db.get(`SELECT rowid, * FROM creators WHERE rowid = ?`, id);
 }
 
 // ---------- EXPORTS ----------
@@ -197,4 +214,5 @@ export {
   getCreatorById
 };
 
-export default db;
+export default dbPromise;
+
