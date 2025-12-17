@@ -1,96 +1,162 @@
-// -----------------------------------------
-// 🚀 EverPay Backend (Express + Stripe)
-// -----------------------------------------
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
+import Stripe from "stripe";
+import bodyParser from "body-parser";
+import { v4 as uuidv4 } from "uuid";
 
-// Routes
-import payRouter from "./routes/pay.js";
-import webhookRouter from "./routes/webhook.js";
-import paymentsRoute from "./routes/payments.js";
-import checkoutRoute from "./routes/checkout.js";
-import linkRoute from "./routes/link.js";
-import creatorRouter from "./routes/creator.js";
-import creatorProfileRoutes from "./routes/creatorProfile.js"; // ⭐ NEW
-
-// ⭐ NEW — Auth routes (LOGIN + SIGNUP)
-import authRoutes from "./routes/auth.js";
+// DB
+import db, {
+  storePayment,
+  getPayments,
+  getPaymentsByCreator,
+  getCreatorPayments,
+  getCreatorByUsername,
+} from "./database.js";
 
 dotenv.config();
+
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// -----------------------------------------
-// 🔓 CORS (for development)
-// -----------------------------------------
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, stripe-signature"
-  );
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
+/* ================================
+   ENV VALIDATION
+================================ */
+const {
+  STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET,
+  FRONTEND_URL,
+  PORT
+} = process.env;
+
+if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+  console.error("❌ Missing Stripe environment variables");
+  process.exit(1);
+}
+
+/* ================================
+   STRIPE
+================================ */
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: "2024-06-20"
 });
 
-// -----------------------------------------
-// ⚠️ MUST be before JSON parser
-// Stripe Webhook (raw body)
-// -----------------------------------------
-app.use("/webhook", webhookRouter);
+/* ================================
+   MIDDLEWARE
+================================ */
+app.use(cors({ origin: "*" }));
 
-// -----------------------------------------
-// 🧩 Body Parsers (AFTER webhook only)
-// -----------------------------------------
+// Webhook MUST be raw
+app.post(
+  "/webhook",
+  bodyParser.raw({ type: "application/json" }),
+  (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("❌ Webhook signature failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+
+      storePayment({
+        id: session.id,
+        amount: session.amount_total,
+        email: session.customer_email,
+        creator: session.metadata?.creator || null,
+        status: session.payment_status,
+        created_at: new Date().toISOString(),
+        gift_name: session.metadata?.gift_name || null,
+        anonymous: session.metadata?.anonymous === "true" ? 1 : 0,
+        gift_message: session.metadata?.gift_message || null
+      });
+    }
+
+    res.json({ received: true });
+  }
+);
+
+// JSON for everything else
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// -----------------------------------------
-// 🔐 Auth Routes (⭐ new)
-// -----------------------------------------
-app.use("/auth", authRoutes);
-
-// -----------------------------------------
-// 💳 Payment Routes
-// -----------------------------------------
-
-// Dashboard pay-by-bank
-app.use("/", payRouter);
-
-// Optional card/other checkout route
-app.use("/", checkoutRoute);
-
-// Creator payments (gifts)
-app.use("/creator", creatorRouter);
-
-// Smart NFC / generated payment links
-app.use("/link", linkRoute);
-
-// -----------------------------------------
-// 💾 Payment history API
-// -----------------------------------------
-app.use("/api/payments", paymentsRoute);
-
-// -----------------------------------------
-// 🧑‍🎤 Creator profile API (⭐ new)
-// -----------------------------------------
-app.use("/api/creator", creatorProfileRoutes);
-
-// -----------------------------------------
-// 🩺 Health Check
-// -----------------------------------------
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, ts: Date.now() });
+/* ================================
+   ROOT (FIXES Cannot GET /)
+================================ */
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "EverPay Backend",
+    environment: process.env.RENDER ? "production" : "local",
+    time: new Date().toISOString()
+  });
 });
 
-// -----------------------------------------
-// ▶️ Start server
-// -----------------------------------------
-app.listen(PORT, () => {
-  console.log("🧾 Environment validated.");
-  console.log(`✅ EverPay Backend running at http://localhost:${PORT}`);
-  console.log("ℹ️ Webhook endpoint: POST /webhook");
-  console.log("ℹ️ Pay test:        GET  /pay?amount=199");
+/* ================================
+   CREATE PAYMENT
+================================ */
+app.get("/pay", async (req, res) => {
+  try {
+    const amount = Number(req.query.amount);
+    const creator = req.query.creator || "everpay";
+
+    if (!amount || amount < 50) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "gbp",
+            product_data: { name: "EverPay Gift" },
+            unit_amount: amount
+          },
+          quantity: 1
+        }
+      ],
+      metadata: { creator },
+      success_url: `${FRONTEND_URL}/success`,
+      cancel_url: `${FRONTEND_URL}/cancel`
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Payment failed" });
+  }
+});
+
+/* ================================
+   PAYMENTS API
+================================ */
+app.get("/api/payments", (req, res) => {
+  const limit = Number(req.query.limit) || 10;
+  res.json(getPayments(limit));
+});
+
+app.get("/api/payments/:creator", (req, res) => {
+  const { creator } = req.params;
+  res.json(getPaymentsByCreator(creator));
+});
+
+/* ================================
+   START SERVER
+================================ */
+const PORT_TO_USE = PORT || 5000;
+
+app.listen(PORT_TO_USE, () => {
+  console.log(`✅ EverPay Backend running at http://localhost:${PORT_TO_USE}`);
+  console.log("📡 Webhook endpoint: POST /webhook");
+  console.log("💳 Pay test: GET /pay?amount=199");
 });
 
