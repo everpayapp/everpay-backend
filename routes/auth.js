@@ -3,12 +3,14 @@ import bcrypt from "bcrypt";
 import {
   findCreatorByEmail,
   createCreatorWithPassword,
-  getCreatorByUsername
+  getCreatorByUsername,
 } from "../database.js";
 
 const router = express.Router();
 
-// ---------- SIGNUP ----------
+/* =========================
+   SIGNUP
+========================= */
 router.post("/signup", (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
@@ -31,7 +33,7 @@ router.post("/signup", (req, res) => {
       username,
       email,
       password,
-      display_name: display_name || username
+      display_name: display_name || username,
     });
 
     delete creator.password_hash;
@@ -43,7 +45,9 @@ router.post("/signup", (req, res) => {
   }
 });
 
-// ---------- LOGIN ----------
+/* =========================
+   LOGIN
+========================= */
 router.post("/login", (req, res) => {
   try {
     const { email, password } = req.body;
@@ -52,30 +56,34 @@ router.post("/login", (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    /* --------------------------------------------------
-       🔐 ADMIN LOGIN (for business dashboard: lee only)
-    -------------------------------------------------- */
-    if (email.toLowerCase() === "lee@everpayapp.co.uk") {
-      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "EverPay2025";
-
-      if (password !== ADMIN_PASSWORD) {
-        return res.status(401).json({ error: "Invalid admin password." });
-      }
-
-      return res.json({
-        creator: {
-          username: "admin",
-          email: "lee@everpayapp.co.uk",
-          role: "admin",
-        },
-      });
-    }
-
-    /* --------------------------------------------------
-       👤 CREATOR LOGIN (normal users)
-    -------------------------------------------------- */
     const creator = findCreatorByEmail(email);
     if (!creator) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    /* =========================
+       ADMIN LOGIN (SAFE)
+    ========================= */
+    if (
+      email.toLowerCase() === "lee@everpayapp.co.uk" &&
+      process.env.ADMIN_PASSWORD
+    ) {
+      if (password === process.env.ADMIN_PASSWORD) {
+        return res.json({
+          creator: {
+            username: "admin",
+            email,
+            role: "admin",
+          },
+        });
+      }
+      // If admin password fails, fall through to creator auth
+    }
+
+    /* =========================
+       CREATOR LOGIN
+    ========================= */
+    if (!creator.password_hash) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
@@ -84,15 +92,14 @@ router.post("/login", (req, res) => {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    const safeCreator = {
-      username: creator.username,
-      email: creator.email,
-      profile_name: creator.profile_name,
-      role: "creator",
-    };
-
-    res.json({ creator: safeCreator });
-
+    res.json({
+      creator: {
+        username: creator.username,
+        email: creator.email,
+        profile_name: creator.profile_name,
+        role: "creator",
+      },
+    });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "Internal server error." });
