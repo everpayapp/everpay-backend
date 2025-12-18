@@ -9,7 +9,7 @@ const DB_PATH = process.env.RENDER ? "/data/everpay.db" : "everpay.db";
 
 const dbPromise = open({
   filename: DB_PATH,
-  driver: sqlite3.Database
+  driver: sqlite3.Database,
 });
 
 // ---------- INIT ----------
@@ -33,6 +33,19 @@ async function init() {
       password_hash TEXT
     )
   `);
+
+  // ---------- SAFE COLUMN ADDS (VERY IMPORTANT) ----------
+  const safeAlter = async (sql) => {
+    try {
+      await db.exec(sql);
+    } catch {
+      // column already exists — ignore
+    }
+  };
+
+  await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_enabled INTEGER DEFAULT 0`);
+  await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_amount INTEGER DEFAULT 0`);
+  await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_text TEXT DEFAULT ''`);
 
   // ---------- Payments table ----------
   await db.exec(`
@@ -134,24 +147,50 @@ async function saveCreatorProfile(profile) {
   const db = await dbPromise;
   return db.run(
     `
-    INSERT OR REPLACE INTO creators (
-      username, profile_name, bio, avatar_url, social_links,
-      theme_start, theme_mid, theme_end, updated_at,
-      email, password_hash
+    INSERT INTO creators (
+      username,
+      profile_name,
+      bio,
+      avatar_url,
+      social_links,
+      theme_start,
+      theme_mid,
+      theme_end,
+      milestone_enabled,
+      milestone_amount,
+      milestone_text,
+      updated_at,
+      email,
+      password_hash
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(username) DO UPDATE SET
+      profile_name = excluded.profile_name,
+      bio = excluded.bio,
+      avatar_url = excluded.avatar_url,
+      social_links = excluded.social_links,
+      theme_start = excluded.theme_start,
+      theme_mid = excluded.theme_mid,
+      theme_end = excluded.theme_end,
+      milestone_enabled = excluded.milestone_enabled,
+      milestone_amount = excluded.milestone_amount,
+      milestone_text = excluded.milestone_text,
+      updated_at = excluded.updated_at
     `,
     profile.username,
-    profile.profile_name,
-    profile.bio,
-    profile.avatar_url,
-    profile.social_links,
-    profile.theme_start,
-    profile.theme_mid,
-    profile.theme_end,
+    profile.profile_name ?? "",
+    profile.bio ?? "",
+    profile.avatar_url ?? "",
+    profile.social_links ?? "[]",
+    profile.theme_start ?? null,
+    profile.theme_mid ?? null,
+    profile.theme_end ?? null,
+    profile.milestone_enabled ? 1 : 0,
+    Number(profile.milestone_amount) || 0,
+    profile.milestone_text ?? "",
     new Date().toISOString(),
-    profile.email,
-    profile.password_hash
+    profile.email ?? null,
+    profile.password_hash ?? null
   );
 }
 
@@ -199,19 +238,18 @@ async function getCreatorById(id) {
   return db.get(`SELECT rowid, * FROM creators WHERE rowid = ?`, id);
 }
 
-// ---------- EXPORTS ----------
 export {
   storePayment,
   getPayments,
   getPaymentsByCreator,
   getCreatorPayments,
   getCreatorByUsername,
-  updateCreatorUsername,
   getCreatorProfile,
   saveCreatorProfile,
+  updateCreatorUsername,
   findCreatorByEmail,
   createCreatorWithPassword,
-  getCreatorById
+  getCreatorById,
 };
 
 export default dbPromise;
