@@ -1,28 +1,21 @@
-// ~/everpay-backend/routes/creatorProfile.js
 import express from "express";
-import db from "../database.js";
+import dbPromise from "../database.js";
 
 const router = express.Router();
 
-/* =====================================
-   🔧 SAFE MIGRATIONS (RUN ONCE)
-===================================== */
-try { db.prepare(`ALTER TABLE creators ADD COLUMN milestone_enabled INTEGER DEFAULT 0`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN milestone_amount INTEGER DEFAULT 0`).run(); } catch {}
-try { db.prepare(`ALTER TABLE creators ADD COLUMN milestone_text TEXT`).run(); } catch {}
-
-/* =====================================
-   GET creator profile
-===================================== */
-router.get("/profile", (req, res) => {
+// GET creator profile
+router.get("/profile", async (req, res) => {
   try {
     const { username } = req.query;
     if (!username) {
       return res.status(400).json({ error: "Missing username" });
     }
 
-    const stmt = db.prepare(`SELECT * FROM creators WHERE username = ?`);
-    const result = stmt.get(username);
+    const db = await dbPromise;
+    const result = await db.get(
+      `SELECT * FROM creators WHERE username = ?`,
+      username
+    );
 
     if (!result) {
       return res.json({});
@@ -31,11 +24,9 @@ router.get("/profile", (req, res) => {
     let social_links = [];
     try {
       social_links = JSON.parse(result.social_links ?? "[]");
-    } catch {
-      social_links = [];
-    }
+    } catch {}
 
-    return res.json({
+    res.json({
       username: result.username,
       profile_name: result.profile_name,
       bio: result.bio,
@@ -49,15 +40,13 @@ router.get("/profile", (req, res) => {
       milestone_text: result.milestone_text ?? "",
     });
   } catch (err) {
-    console.error("❌ Creator profile GET error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Creator profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-/* =====================================
-   UPDATE creator profile
-===================================== */
-router.post("/profile/update", (req, res) => {
+// UPDATE creator profile
+router.post("/profile/update", async (req, res) => {
   try {
     const {
       username,
@@ -77,9 +66,11 @@ router.post("/profile/update", (req, res) => {
       return res.status(400).json({ error: "Missing username" });
     }
 
-    const normalizedLinks = Array.isArray(social_links)
-      ? JSON.stringify(social_links)
-      : JSON.stringify([]);
+    const db = await dbPromise;
+
+    const normalizedLinks = JSON.stringify(
+      Array.isArray(social_links) ? social_links : []
+    );
 
     const enabledInt =
       milestone_enabled === true ||
@@ -88,10 +79,7 @@ router.post("/profile/update", (req, res) => {
         ? 1
         : 0;
 
-    const amountInt = Number(milestone_amount) || 0;
-    const textValue = milestone_text ?? "";
-
-    db.prepare(
+    await db.run(
       `
       INSERT INTO creators (
         username,
@@ -120,8 +108,7 @@ router.post("/profile/update", (req, res) => {
         milestone_amount = excluded.milestone_amount,
         milestone_text = excluded.milestone_text,
         updated_at = CURRENT_TIMESTAMP
-    `
-    ).run(
+      `,
       username,
       profile_name ?? "",
       bio ?? "",
@@ -131,15 +118,16 @@ router.post("/profile/update", (req, res) => {
       theme_mid ?? null,
       theme_end ?? null,
       enabledInt,
-      amountInt,
-      textValue
+      Number(milestone_amount) || 0,
+      milestone_text ?? ""
     );
 
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Creator profile UPDATE error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Update profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 export default router;
+
