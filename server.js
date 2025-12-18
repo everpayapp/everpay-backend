@@ -14,6 +14,9 @@ import db, {
   getCreatorByUsername,
 } from "./database.js";
 
+// ROUTES
+import authRoutes from "./routes/auth.js";
+
 dotenv.config();
 
 const app = express();
@@ -25,7 +28,7 @@ const {
   STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET,
   FRONTEND_URL,
-  PORT
+  PORT,
 } = process.env;
 
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
@@ -37,7 +40,7 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
    STRIPE
 ================================ */
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20"
+  apiVersion: "2024-06-20",
 });
 
 /* ================================
@@ -45,7 +48,9 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 ================================ */
 app.use(cors({ origin: "*" }));
 
-// Webhook MUST be raw
+/* ================================
+   STRIPE WEBHOOK (RAW BODY ONLY)
+================================ */
 app.post(
   "/webhook",
   bodyParser.raw({ type: "application/json" }),
@@ -76,7 +81,7 @@ app.post(
         created_at: new Date().toISOString(),
         gift_name: session.metadata?.gift_name || null,
         anonymous: session.metadata?.anonymous === "true" ? 1 : 0,
-        gift_message: session.metadata?.gift_message || null
+        gift_message: session.metadata?.gift_message || null,
       });
     }
 
@@ -84,8 +89,15 @@ app.post(
   }
 );
 
-// JSON for everything else
+/* ================================
+   JSON FOR EVERYTHING ELSE
+================================ */
 app.use(express.json());
+
+/* ================================
+   AUTH ROUTES  ✅ (THIS WAS MISSING)
+================================ */
+app.use("/api/auth", authRoutes);
 
 /* ================================
    ROOT (FIXES Cannot GET /)
@@ -95,7 +107,7 @@ app.get("/", (req, res) => {
     status: "ok",
     service: "EverPay Backend",
     environment: process.env.RENDER ? "production" : "local",
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
   });
 });
 
@@ -119,14 +131,14 @@ app.get("/pay", async (req, res) => {
           price_data: {
             currency: "gbp",
             product_data: { name: "EverPay Gift" },
-            unit_amount: amount
+            unit_amount: amount,
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
       metadata: { creator },
       success_url: `${FRONTEND_URL}/success`,
-      cancel_url: `${FRONTEND_URL}/cancel`
+      cancel_url: `${FRONTEND_URL}/cancel`,
     });
 
     res.json({ url: session.url });
@@ -155,8 +167,7 @@ app.get("/api/payments/:creator", (req, res) => {
 const PORT_TO_USE = PORT || 5000;
 
 app.listen(PORT_TO_USE, () => {
-  console.log(`✅ EverPay Backend running at http://localhost:${PORT_TO_USE}`);
+  console.log(`✅ EverPay Backend running on port ${PORT_TO_USE}`);
   console.log("📡 Webhook endpoint: POST /webhook");
-  console.log("💳 Pay test: GET /pay?amount=199");
+  console.log("🔐 Auth endpoints: /api/auth/login | /api/auth/signup");
 });
-
