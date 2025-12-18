@@ -3,19 +3,17 @@ import cors from "cors";
 import dotenv from "dotenv";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
-import { v4 as uuidv4 } from "uuid";
 
 // DB
 import db, {
   storePayment,
   getPayments,
   getPaymentsByCreator,
-  getCreatorPayments,
-  getCreatorByUsername,
 } from "./database.js";
 
 // ROUTES
 import authRoutes from "./routes/auth.js";
+import creatorProfileRoutes from "./routes/creatorProfile.js";
 
 dotenv.config();
 
@@ -95,12 +93,13 @@ app.post(
 app.use(express.json());
 
 /* ================================
-   AUTH ROUTES  ✅ (THIS WAS MISSING)
+   ROUTES
 ================================ */
 app.use("/api/auth", authRoutes);
+app.use("/api/creator", creatorProfileRoutes);
 
 /* ================================
-   ROOT (FIXES Cannot GET /)
+   ROOT
 ================================ */
 app.get("/", (req, res) => {
   res.json({
@@ -109,6 +108,19 @@ app.get("/", (req, res) => {
     environment: process.env.RENDER ? "production" : "local",
     time: new Date().toISOString(),
   });
+});
+
+/* ================================
+   PAYMENTS API
+================================ */
+app.get("/api/payments", (req, res) => {
+  const limit = Number(req.query.limit) || 10;
+  res.json(getPayments(limit));
+});
+
+app.get("/api/payments/:creator", (req, res) => {
+  const { creator } = req.params;
+  res.json(getPaymentsByCreator(creator));
 });
 
 /* ================================
@@ -149,19 +161,6 @@ app.get("/pay", async (req, res) => {
 });
 
 /* ================================
-   PAYMENTS API
-================================ */
-app.get("/api/payments", (req, res) => {
-  const limit = Number(req.query.limit) || 10;
-  res.json(getPayments(limit));
-});
-
-app.get("/api/payments/:creator", (req, res) => {
-  const { creator } = req.params;
-  res.json(getPaymentsByCreator(creator));
-});
-
-/* ================================
    START SERVER
 ================================ */
 const PORT_TO_USE = PORT || 5000;
@@ -170,4 +169,5 @@ app.listen(PORT_TO_USE, () => {
   console.log(`✅ EverPay Backend running on port ${PORT_TO_USE}`);
   console.log("📡 Webhook endpoint: POST /webhook");
   console.log("🔐 Auth endpoints: /api/auth/login | /api/auth/signup");
+  console.log("👤 Creator profile: /api/creator/profile");
 });
