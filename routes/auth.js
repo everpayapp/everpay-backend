@@ -11,7 +11,7 @@ const router = express.Router();
 /* =========================
    SIGNUP
 ========================= */
-router.post("/signup", (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
 
@@ -19,17 +19,17 @@ router.post("/signup", (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    const existingEmail = findCreatorByEmail(email);
+    const existingEmail = await findCreatorByEmail(email);
     if (existingEmail) {
       return res.status(409).json({ error: "Email already in use." });
     }
 
-    const existingUser = getCreatorByUsername(username);
+    const existingUser = await getCreatorByUsername(username);
     if (existingUser) {
       return res.status(409).json({ error: "Username already taken." });
     }
 
-    const creator = createCreatorWithPassword({
+    const creator = await createCreatorWithPassword({
       username,
       email,
       password,
@@ -48,7 +48,7 @@ router.post("/signup", (req, res) => {
 /* =========================
    LOGIN
 ========================= */
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -56,13 +56,8 @@ router.post("/login", (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    const creator = findCreatorByEmail(email);
-    if (!creator) {
-      return res.status(401).json({ error: "Invalid email or password." });
-    }
-
     /* =========================
-       ADMIN LOGIN (SAFE)
+       ADMIN LOGIN
     ========================= */
     if (
       email.toLowerCase() === "lee@everpayapp.co.uk" &&
@@ -77,13 +72,14 @@ router.post("/login", (req, res) => {
           },
         });
       }
-      // If admin password fails, fall through to creator auth
+      // fall through if admin password incorrect
     }
 
     /* =========================
        CREATOR LOGIN
     ========================= */
-    if (!creator.password_hash) {
+    const creator = await findCreatorByEmail(email);
+    if (!creator || !creator.password_hash) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
@@ -105,35 +101,5 @@ router.post("/login", (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 });
-// --------------------------------------------------
-// 🔑 TEMPORARY PASSWORD RESET (REMOVE AFTER USE)
-// --------------------------------------------------
-router.post("/reset-password", (req, res) => {
-  try {
-    const { email, newPassword } = req.body;
-
-    if (!email || !newPassword) {
-      return res.status(400).json({ error: "Missing email or new password" });
-    }
-
-    const creator = findCreatorByEmail(email);
-    if (!creator) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const bcrypt = require("bcrypt");
-    const hash = bcrypt.hashSync(newPassword, 12);
-
-    db.prepare(
-      `UPDATE creators SET password_hash = ? WHERE email = ?`
-    ).run(hash, email);
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Reset error:", err);
-    res.status(500).json({ error: "Reset failed" });
-  }
-});
-
 
 export default router;
