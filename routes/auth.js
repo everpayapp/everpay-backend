@@ -102,4 +102,38 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// --------------------------------------------------
+// 🔑 TEMPORARY PASSWORD RESET (REMOVE AFTER USE)
+// --------------------------------------------------
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: "Missing email or new password" });
+    }
+
+    const creator = await findCreatorByEmail(email);
+    if (!creator) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const hash = bcrypt.hashSync(newPassword, 12);
+
+    const db = await (await import("../database.js")).default;
+    await db.run(
+      `UPDATE creators SET password_hash = ? WHERE email = ?`,
+      hash,
+      email
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Reset error:", err);
+    res.status(500).json({ error: "Reset failed" });
+  }
+});
+
+
+
 export default router;
