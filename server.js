@@ -20,8 +20,7 @@ const app = express();
 /* ================================
    ENV VALIDATION
 ================================ */
-const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL, PORT } =
-  process.env;
+const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL, PORT } = process.env;
 
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   console.error("❌ Missing Stripe environment variables");
@@ -51,11 +50,7 @@ app.post(
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        STRIPE_WEBHOOK_SECRET
-      );
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
     } catch (err) {
       console.error("❌ Webhook signature failed:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -119,41 +114,17 @@ app.get("/api/payments/:creator", (req, res) => {
 });
 
 /* ================================
-   CREATE PAYMENT
+   DEPRECATED CARD ROUTE (DISABLED)
+   This route was causing Stripe sessions
+   to be created with ["card"].
 ================================ */
-app.get("/pay", async (req, res) => {
-  try {
-    const amount = Number(req.query.amount);
-    const creator = req.query.creator || "everpay";
-
-    if (!amount || amount < 50) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: { name: "EverPay Gift" },
-            unit_amount: amount,
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: { creator },
-      success_url: `${FRONTEND_URL}/success`,
-      cancel_url: `${FRONTEND_URL}/cancel`,
-    });
-
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Payment failed" });
-  }
+app.get("/pay", (req, res) => {
+  return res.status(410).json({
+    error: "Deprecated. Use POST /creator/pay/:username",
+    example: "POST /creator/pay/lee  { amount: 500, supporterName: 'Test', ... }",
+  });
 });
+
 
 /* ================================
    START SERVER
