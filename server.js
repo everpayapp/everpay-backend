@@ -103,15 +103,28 @@ app.get("/", (req, res) => {
 /* ================================
    PAYMENTS API
 ================================ */
-app.get("/api/payments", (req, res) => {
-  const limit = Number(req.query.limit) || 10;
-  res.json(getPayments(limit));
+app.get("/api/payments", async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const rows = await getPayments(limit);
+    res.json(rows || []);
+  } catch (err) {
+    console.error("❌ /api/payments error:", err);
+    res.status(500).json({ error: "Failed to load payments" });
+  }
 });
 
-app.get("/api/payments/:creator", (req, res) => {
-  const { creator } = req.params;
-  res.json(getPaymentsByCreator(creator));
+app.get("/api/payments/:creator", async (req, res) => {
+  try {
+    const { creator } = req.params;
+    const rows = await getPaymentsByCreator(creator);
+    res.json(rows || []);
+  } catch (err) {
+    console.error("❌ /api/payments/:creator error:", err);
+    res.status(500).json({ error: "Failed to load creator payments" });
+  }
 });
+
 
 /* ================================
    DEPRECATED CARD ROUTE (DISABLED)
