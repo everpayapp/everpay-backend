@@ -24,7 +24,7 @@ router.post("/pay/:username", async (req, res) => {
     // IMPORTANT:
     // If Pay by Bank is enabled + eligible, Stripe will show it.
     // Keeping card as well means you always have a fallback.
-    const payment_method_types = isUK ? ["card", "pay_by_bank"] : ["card"];
+    const payment_method_types = ["pay_by_bank"];
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
