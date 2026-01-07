@@ -1,3 +1,4 @@
+// ~/everpay-backend/server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -5,15 +6,12 @@ import Stripe from "stripe";
 import bodyParser from "body-parser";
 
 // DB
-import db, {
-  storePayment,
-  getPayments,
-  getPaymentsByCreator,
-} from "./database.js";
+import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
 
 // ROUTES
 import authRoutes from "./routes/auth.js";
 import creatorProfileRoutes from "./routes/creatorProfile.js";
+import creatorRoutes from "./routes/creator.js";
 
 dotenv.config();
 
@@ -22,12 +20,8 @@ const app = express();
 /* ================================
    ENV VALIDATION
 ================================ */
-const {
-  STRIPE_SECRET_KEY,
-  STRIPE_WEBHOOK_SECRET,
-  FRONTEND_URL,
-  PORT,
-} = process.env;
+const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL, PORT } =
+  process.env;
 
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   console.error("❌ Missing Stripe environment variables");
@@ -97,6 +91,7 @@ app.use(express.json());
 ================================ */
 app.use("/api/auth", authRoutes);
 app.use("/api/creator", creatorProfileRoutes);
+app.use("/creator", creatorRoutes);
 
 /* ================================
    ROOT
@@ -170,4 +165,5 @@ app.listen(PORT_TO_USE, () => {
   console.log("📡 Webhook endpoint: POST /webhook");
   console.log("🔐 Auth endpoints: /api/auth/login | /api/auth/signup");
   console.log("👤 Creator profile: /api/creator/profile");
+  console.log("🎁 Creator pay: POST /creator/pay/:username");
 });
