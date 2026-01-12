@@ -8,7 +8,6 @@ import dbPromise, {
 
 const router = express.Router();
 
-
 /* =========================
    SIGNUP
 ========================= */
@@ -47,7 +46,7 @@ router.post("/signup", async (req, res) => {
 });
 
 /* =========================
-   LOGIN
+   LOGIN (creator-first only)
 ========================= */
 router.post("/login", async (req, res) => {
   try {
@@ -57,9 +56,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    // Admin login shortcut removed (creator-first model)
-
-    // ✅ Creator login
+    // ✅ Creator login only (admin shortcut removed)
     const creator = await findCreatorByEmail(email);
     if (!creator || !creator.password_hash) {
       return res.status(401).json({ error: "Invalid email or password." });
@@ -85,23 +82,29 @@ router.post("/login", async (req, res) => {
 });
 
 /* ==========================================================
-   🔧 TEMP ADMIN-ONLY FIX: Set email + password for a username
-   - Requires admin email + ADMIN_PASSWORD
-   - Use ONCE to repair 'lee' in production, then remove
+   🔧 TEMP (REMOVE AFTER): Reset a creator password securely
+   - Requires ADMIN_PASSWORD (Render env)
+   - Use once to regain access, then delete this route.
 ========================================================== */
 router.post("/admin/fix-creator", async (req, res) => {
   try {
-    const { adminEmail, adminPassword, username, email, newPassword } = req.body;
-
-    if (!adminEmail || !adminPassword) {
-      return res.status(401).json({ error: "Missing admin credentials." });
+    if (!req.body || typeof req.body !== "object") {
+      return res.status(400).json({
+        error: "Missing JSON body. Ensure Content-Type: application/json",
+      });
     }
 
-    if (
-      adminEmail.toLowerCase() !== ADMIN_EMAIL ||
-      !process.env.ADMIN_PASSWORD ||
-      adminPassword !== process.env.ADMIN_PASSWORD
-    ) {
+    const { adminPassword, username, email, newPassword } = req.body;
+
+    if (!adminPassword) {
+      return res.status(401).json({ error: "Missing adminPassword." });
+    }
+
+    if (!process.env.ADMIN_PASSWORD) {
+      return res.status(500).json({ error: "ADMIN_PASSWORD not set on server." });
+    }
+
+    if (adminPassword !== process.env.ADMIN_PASSWORD) {
       return res.status(401).json({ error: "Invalid admin credentials." });
     }
 
@@ -118,7 +121,6 @@ router.post("/admin/fix-creator", async (req, res) => {
       return res.status(404).json({ error: "Username not found." });
     }
 
-    // If email is used by someone else, block it
     const emailOwner = await findCreatorByEmail(email);
     if (emailOwner && emailOwner.username !== username) {
       return res.status(409).json({ error: "Email already in use." });
@@ -138,8 +140,12 @@ router.post("/admin/fix-creator", async (req, res) => {
     return res.json({ success: true, updated: { username, email } });
   } catch (err) {
     console.error("Admin fix error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({
+      error: "Internal server error.",
+      detail: String(err?.message || err),
+    });
   }
 });
 
 export default router;
+
