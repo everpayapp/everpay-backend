@@ -8,7 +8,6 @@ import dbPromise, {
 
 const router = express.Router();
 
-const ADMIN_EMAIL = "lee@everpayapp.co.uk";
 
 /* =========================
    SIGNUP
@@ -58,15 +57,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    // ✅ Admin login (only if ADMIN_PASSWORD matches)
-    if (email.toLowerCase() === ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
-      if (password === process.env.ADMIN_PASSWORD) {
-        return res.json({
-          creator: { username: "admin", email, role: "admin" },
-        });
-      }
-      // If admin password fails, fall through to creator auth
-    }
+    // Admin login shortcut removed (creator-first model)
 
     // ✅ Creator login
     const creator = await findCreatorByEmail(email);
