@@ -46,6 +46,10 @@ async function init() {
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_enabled INTEGER DEFAULT 0`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_amount INTEGER DEFAULT 0`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_text TEXT DEFAULT ''`);
+  await safeAlter(`ALTER TABLE creators ADD COLUMN reset_token TEXT`);
+  await safeAlter(`ALTER TABLE creators ADD COLUMN reset_expires TEXT`);
+
+
 
   // ---------- Payments table ----------
   await db.exec(`
