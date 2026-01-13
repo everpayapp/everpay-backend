@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
+import avatarRoutes from "./routes/avatar.js";
 
 // DB
 import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
@@ -86,6 +87,7 @@ app.use(express.json());
 ================================ */
 app.use("/api/auth", authRoutes);
 app.use("/api/creator", creatorProfileRoutes);
+app.use("/api/creator", avatarRoutes);
 app.use("/creator", creatorRoutes);
 
 /* ================================
