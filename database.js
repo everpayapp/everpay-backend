@@ -49,8 +49,6 @@ async function init() {
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_token TEXT`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_expires TEXT`);
 
-
-
   // ---------- Payments table ----------
   await db.exec(`
     CREATE TABLE IF NOT EXISTS payments (
@@ -198,6 +196,21 @@ async function saveCreatorProfile(profile) {
   );
 }
 
+async function updateCreatorAvatarUrl(username, avatarUrl) {
+  const db = await dbPromise;
+
+  await db.run(
+    `UPDATE creators
+     SET avatar_url = ?, updated_at = ?
+     WHERE username = ?`,
+    avatarUrl,
+    new Date().toISOString(),
+    username
+  );
+
+  return true;
+}
+
 async function updateCreatorUsername(oldUsername, newUsername) {
   const db = await dbPromise;
   return db.run(
@@ -250,6 +263,7 @@ export {
   getCreatorByUsername,
   getCreatorProfile,
   saveCreatorProfile,
+  updateCreatorAvatarUrl,
   updateCreatorUsername,
   findCreatorByEmail,
   createCreatorWithPassword,
@@ -257,4 +271,3 @@ export {
 };
 
 export default dbPromise;
-
