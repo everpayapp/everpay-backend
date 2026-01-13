@@ -1,6 +1,8 @@
+// ~/everpay-backend/routes/auth.js
 import crypto from "crypto";
 import express from "express";
 import bcrypt from "bcrypt";
+import { Resend } from "resend";
 import dbPromise, {
   findCreatorByEmail,
   createCreatorWithPassword,
@@ -8,6 +10,45 @@ import dbPromise, {
 } from "../database.js";
 
 const router = express.Router();
+
+/* =========================
+   Helper: Send reset email
+========================= */
+async function sendResetEmail({ to, resetUrl }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL || "EverPay <onboarding@resend.dev>";
+
+  if (!apiKey) throw new Error("RESEND_API_KEY not set on server.");
+  const resend = new Resend(apiKey);
+
+  const subject = "Reset your EverPay password";
+
+  const html = `
+  <div style="font-family: Arial, sans-serif; line-height: 1.5; color:#111;">
+    <h2 style="margin:0 0 10px;">Reset your password</h2>
+    <p style="margin:0 0 14px;">
+      Someone requested a password reset for your EverPay creator account.
+      If this was you, click the button below:
+    </p>
+    <p style="margin:18px 0;">
+      <a href="${resetUrl}"
+         style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 16px;border-radius:10px;">
+        Reset Password
+      </a>
+    </p>
+    <p style="margin:18px 0 0;color:#555;font-size:13px;">
+      If you didn’t request this, you can ignore this email.
+      This link expires in 1 hour.
+    </p>
+  </div>`;
+
+  await resend.emails.send({
+    from,
+    to,
+    subject,
+    html,
+  });
+}
 
 /* =========================
    SIGNUP
@@ -57,7 +98,6 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    // ✅ Creator login only (admin shortcut removed)
     const creator = await findCreatorByEmail(email);
     if (!creator || !creator.password_hash) {
       return res.status(401).json({ error: "Invalid email or password." });
@@ -85,6 +125,7 @@ router.post("/login", async (req, res) => {
 /* =========================
    FORGOT PASSWORD
    - Generates reset token
+   - Emails reset link via Resend
 ========================= */
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -92,6 +133,7 @@ router.post("/forgot-password", async (req, res) => {
     if (!email) return res.status(400).json({ error: "Missing email." });
 
     const creator = await findCreatorByEmail(String(email).trim());
+
     // Always return success to avoid email enumeration
     if (!creator) return res.json({ success: true });
 
@@ -107,16 +149,23 @@ router.post("/forgot-password", async (req, res) => {
       creator.username
     );
 
-    // For now: return token in response (dev/testing).
-    // Later: email this link via email provider.
-    return res.json({
-      success: true,
-      resetToken: token,
-      expires,
-    });
+    const baseUrl = process.env.APP_BASE_URL;
+    if (!baseUrl) throw new Error("APP_BASE_URL not set on server.");
+
+    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(
+      token
+    )}`;
+
+    // Send email
+    await sendResetEmail({ to: creator.email, resetUrl });
+
+    return res.json({ success: true });
   } catch (err) {
     console.error("Forgot password error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({
+      error: "Internal server error.",
+      detail: String(err?.message || err),
+    });
   }
 });
 
@@ -133,7 +182,9 @@ router.post("/reset-password", async (req, res) => {
     }
 
     if (String(newPassword).length < 8) {
-      return res.status(400).json({ error: "Password must be at least 8 characters." });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 8 characters." });
     }
 
     const db = await dbPromise;
@@ -166,7 +217,6 @@ router.post("/reset-password", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
-
 
 export default router;
 
