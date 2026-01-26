@@ -16,30 +16,68 @@ const router = express.Router();
 ========================= */
 async function sendResetEmail({ to, resetUrl }) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.FROM_EMAIL || "EverPay <onboarding@resend.dev>";
+
+  // Use your verified domain sender if set, otherwise fallback
+  const from =
+    process.env.FROM_EMAIL || "EverPay <no-reply@everpayapp.co.uk>";
 
   if (!apiKey) throw new Error("RESEND_API_KEY not set on server.");
   const resend = new Resend(apiKey);
 
   const subject = "Reset your EverPay password";
 
+  // Preview text some clients show next to the subject
+  const preheader =
+    "Use this link to reset your EverPay password (expires in 1 hour).";
+
+  // Plain-text fallback (important for deliverability + clarity)
+  const text = `Reset your EverPay password
+
+Someone requested a password reset for your EverPay creator account.
+
+Reset your password using this link (expires in 1 hour):
+${resetUrl}
+
+If you didn’t request this, you can safely ignore this email.`;
+
   const html = `
-  <div style="font-family: Arial, sans-serif; line-height: 1.5; color:#111;">
-    <h2 style="margin:0 0 10px;">Reset your password</h2>
-    <p style="margin:0 0 14px;">
-      Someone requested a password reset for your EverPay creator account.
-      If this was you, click the button below:
-    </p>
-    <p style="margin:18px 0;">
-      <a href="${resetUrl}"
-         style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 16px;border-radius:10px;">
-        Reset Password
-      </a>
-    </p>
-    <p style="margin:18px 0 0;color:#555;font-size:13px;">
-      If you didn’t request this, you can ignore this email.
-      This link expires in 1 hour.
-    </p>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+    ${preheader}
+  </div>
+
+  <div style="font-family: Arial, sans-serif; line-height: 1.5; color:#111; padding: 24px; background:#f6f7fb;">
+    <div style="max-width: 520px; margin: 0 auto; background:#fff; border:1px solid #e7e7ef; border-radius: 14px; padding: 22px;">
+      <h2 style="margin:0 0 10px; font-size: 20px;">Reset your password</h2>
+
+      <p style="margin:0 0 14px; color:#333;">
+        Someone requested a password reset for your EverPay creator account.
+        If this was you, click the button below.
+      </p>
+
+      <p style="margin:18px 0;">
+        <a href="${resetUrl}"
+           style="display:inline-block;background:#0b0f19;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700;">
+          Reset Password
+        </a>
+      </p>
+
+      <p style="margin: 14px 0 0; color:#555; font-size: 13px;">
+        If the button doesn’t work, copy and paste this link into your browser:
+      </p>
+
+      <p style="margin: 8px 0 0; font-size: 13px; word-break: break-all;">
+        <a href="${resetUrl}" style="color:#2563eb; text-decoration: underline;">${resetUrl}</a>
+      </p>
+
+      <p style="margin:18px 0 0;color:#666;font-size:13px;">
+        If you didn’t request this, you can ignore this email.
+        This link expires in <strong>1 hour</strong>.
+      </p>
+    </div>
+
+    <div style="max-width: 520px; margin: 10px auto 0; color:#8a8fa3; font-size: 12px; text-align:center;">
+      © ${new Date().getFullYear()} EverPay
+    </div>
   </div>`;
 
   await resend.emails.send({
@@ -47,6 +85,7 @@ async function sendResetEmail({ to, resetUrl }) {
     to,
     subject,
     html,
+    text,
   });
 }
 
@@ -149,14 +188,16 @@ router.post("/forgot-password", async (req, res) => {
       creator.username
     );
 
-    const baseUrl = process.env.APP_BASE_URL;
-    if (!baseUrl) throw new Error("APP_BASE_URL not set on server.");
+    const baseUrlRaw = process.env.APP_BASE_URL;
+    if (!baseUrlRaw) throw new Error("APP_BASE_URL not set on server.");
+
+    // remove any trailing slash so links are always correct
+    const baseUrl = String(baseUrlRaw).replace(/\/+$/, "");
 
     const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(
       token
     )}`;
 
-    // Send email
     await sendResetEmail({ to: creator.email, resetUrl });
 
     return res.json({ success: true });
@@ -219,4 +260,3 @@ router.post("/reset-password", async (req, res) => {
 });
 
 export default router;
-
