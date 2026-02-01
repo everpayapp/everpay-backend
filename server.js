@@ -6,6 +6,9 @@ import Stripe from "stripe";
 import bodyParser from "body-parser";
 import avatarRoutes from "./routes/avatar.js";
 
+// ✅ NEW: Stripe Connect routes
+import stripeConnectRoutes from "./routes/stripeConnect.js";
+
 // DB
 import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
 
@@ -90,6 +93,9 @@ app.use("/api/creator", creatorProfileRoutes);
 app.use("/api/creator", avatarRoutes);
 app.use("/creator", creatorRoutes);
 
+// ✅ NEW: Connect endpoints
+app.use("/api/stripe", stripeConnectRoutes);
+
 /* ================================
    ROOT
 ================================ */
@@ -127,7 +133,6 @@ app.get("/api/payments/:creator", async (req, res) => {
   }
 });
 
-
 /* ================================
    DEPRECATED CARD ROUTE (DISABLED)
    This route was causing Stripe sessions
@@ -139,7 +144,6 @@ app.get("/pay", (req, res) => {
     example: "POST /creator/pay/lee  { amount: 500, supporterName: 'Test', ... }",
   });
 });
-
 
 /* ================================
    START SERVER

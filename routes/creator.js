@@ -1,6 +1,8 @@
+// ~/everpay-backend/routes/creator.js
 import express from "express";
 import Stripe from "stripe";
 import dotenv from "dotenv";
+import dbPromise from "../database.js";
 
 dotenv.config();
 
@@ -11,6 +13,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+async function getStripeAccountId(username) {
+  const db = await dbPromise;
+  // If the column doesn't exist yet, this will throw — but we added it safely in stripeConnect.js.
+  const row = await db.get(
+    "SELECT stripe_account_id FROM creators WHERE username = ?",
+    username
+  );
+  return row?.stripe_account_id || null;
+}
 
 router.post("/pay/:username", async (req, res) => {
   try {
@@ -27,11 +39,28 @@ router.post("/pay/:username", async (req, res) => {
     // ✅ Bank-only for creator gifts
     const payment_method_types = ["pay_by_bank"];
 
+    // ✅ If creator connected, send money to their connected Stripe account
+    const stripeAccountId = await getStripeAccountId(username);
+
+    const paymentIntentData = {
+      metadata: {
+        creator: username,
+        gift_name: supporterName || "",
+        gift_message: gift_message || "",
+        anonymous: anonymous ? "true" : "false",
+        source: stripeAccountId ? "creator-pay-to-connect" : "creator-pay-to-platform",
+      },
+      ...(stripeAccountId
+        ? {
+            transfer_data: { destination: stripeAccountId },
+          }
+        : {}),
+    };
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types,
 
-      // Helpful in Stripe dashboard/logs
       client_reference_id: `creator:${username}`,
 
       line_items: [
@@ -53,22 +82,17 @@ router.post("/pay/:username", async (req, res) => {
         gift_name: supporterName || "",
         gift_message: gift_message || "",
         anonymous: anonymous ? "true" : "false",
-        source: "creator-pay-by-bank-only",
+        source: stripeAccountId ? "creator-pay-to-connect" : "creator-pay-to-platform",
       },
 
-      payment_intent_data: {
-        metadata: {
-          creator: username,
-          gift_name: supporterName || "",
-          gift_message: gift_message || "",
-          anonymous: anonymous ? "true" : "false",
-          source: "creator-pay-by-bank-only",
-        },
-      },
+      payment_intent_data: paymentIntentData,
     });
 
-    // 🚨 Hard safety check: if Stripe ever returns anything but pay_by_bank, fail loudly
-    if (!Array.isArray(session.payment_method_types) || session.payment_method_types[0] !== "pay_by_bank") {
+    // Safety check: ensure pay_by_bank remained the payment method
+    if (
+      !Array.isArray(session.payment_method_types) ||
+      session.payment_method_types[0] !== "pay_by_bank"
+    ) {
       console.error("❌ Stripe did not keep pay_by_bank. Returned:", session.payment_method_types);
       return res.status(500).json({
         error: "Pay by Bank not available for this session (Stripe returned different payment methods).",
@@ -76,10 +100,9 @@ router.post("/pay/:username", async (req, res) => {
       });
     }
 
-    return res.json({ url: session.url });
+    return res.json({ url: session.url, connected: !!stripeAccountId });
   } catch (err) {
     console.error("❌ Creator payment session error:", err);
-    // return Stripe's message if available (helps debugging eligibility)
     return res.status(500).json({
       error: "Internal server error",
       stripe_message: err?.message || undefined,
