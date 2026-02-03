@@ -13,7 +13,8 @@ router.get("/profile", async (req, res) => {
 
     const db = await dbPromise;
 
-    // ✅ If duplicates exist, always return the newest row
+    // ✅ Avoid referencing non-existent columns (created_at might not exist)
+    // ✅ If duplicates exist, rowid + updated_at is enough to pick latest
     const result = await db.get(
       `
       SELECT
@@ -31,14 +32,15 @@ router.get("/profile", async (req, res) => {
         updated_at
       FROM creators
       WHERE username = ?
-      ORDER BY COALESCE(updated_at, created_at, rowid) DESC
+      ORDER BY COALESCE(updated_at, rowid) DESC
       LIMIT 1
       `,
       username
     );
 
+    // ✅ Keep old behavior so frontend doesn't break
     if (!result) {
-      return res.status(404).json({ error: "Creator not found" });
+      return res.json({});
     }
 
     let social_links = [];
@@ -48,7 +50,7 @@ router.get("/profile", async (req, res) => {
       social_links = [];
     }
 
-    res.json({
+    return res.json({
       username: result.username,
       profile_name: result.profile_name ?? "",
       bio: result.bio ?? "",
@@ -63,7 +65,7 @@ router.get("/profile", async (req, res) => {
     });
   } catch (err) {
     console.error("Creator profile error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -99,10 +101,9 @@ router.post("/profile/update", async (req, res) => {
     const milestone_amount = Number(body.milestone_amount) || 0;
     const milestone_text = body.milestone_text ?? "";
 
-    // ✅ Debug proof in logs (Render/local)
     console.log("[profile/update] username:", username);
 
-    // ✅ Safer than UPSERT: UPDATE first
+    // ✅ UPDATE first (affects all duplicates if they exist)
     const updateResult = await db.run(
       `
       UPDATE creators SET
@@ -135,7 +136,7 @@ router.post("/profile/update", async (req, res) => {
     const changes = updateResult?.changes ?? 0;
     console.log("[profile/update] update changes:", changes);
 
-    // If no row existed, INSERT a new one
+    // ✅ If no row existed, insert one (rare)
     if (changes === 0) {
       const insertResult = await db.run(
         `
@@ -168,16 +169,13 @@ router.post("/profile/update", async (req, res) => {
         milestone_text
       );
 
-      console.log(
-        "[profile/update] insert changes:",
-        insertResult?.changes ?? 0
-      );
+      console.log("[profile/update] insert changes:", insertResult?.changes ?? 0);
     }
 
     return res.json({ success: true });
   } catch (err) {
     console.error("Update profile error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
