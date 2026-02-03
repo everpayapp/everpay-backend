@@ -228,26 +228,41 @@ async function updateCreatorUsername(oldUsername, newUsername) {
 // ---------- Auth ----------
 async function findCreatorByEmail(email) {
   const db = await dbPromise;
-  return db.get(`SELECT * FROM creators WHERE email = ?`, email);
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  return db.get(`SELECT * FROM creators WHERE LOWER(email) = ?`, cleanEmail);
 }
 
+/**
+ * IMPORTANT:
+ * - We ALWAYS use the username provided by the user (never derive from email).
+ * - We return the row by username (not by email), so we never accidentally pick the wrong row.
+ */
 async function createCreatorWithPassword({ username, email, password, display_name }) {
   const db = await dbPromise;
-  const passwordHash = bcrypt.hashSync(password, SALT_ROUNDS);
+
+  const cleanUsername = String(username || "").trim().toLowerCase();
+  const cleanEmail = String(email || "").trim().toLowerCase();
+
+  if (!cleanUsername || !cleanEmail || !password) {
+    throw new Error("Missing required fields");
+  }
+
+  const passwordHash = bcrypt.hashSync(String(password), SALT_ROUNDS);
 
   await db.run(
     `
     INSERT INTO creators (
-      username, profile_name, email, password_hash
-    ) VALUES (?, ?, ?, ?)
+      username, profile_name, email, password_hash, updated_at
+    ) VALUES (?, ?, ?, ?, ?)
     `,
-    username,
-    display_name,
-    email,
-    passwordHash
+    cleanUsername,
+    display_name || cleanUsername,
+    cleanEmail,
+    passwordHash,
+    new Date().toISOString()
   );
 
-  return findCreatorByEmail(email);
+  return getCreatorByUsername(cleanUsername);
 }
 
 async function getCreatorById(id) {

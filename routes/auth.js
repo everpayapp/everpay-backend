@@ -14,6 +14,8 @@ const router = express.Router();
 /* =========================
    Helper: Ensure creator profile row exists
    (Fixes multi-creator settings for new accounts)
+   NOTE: Your creators table already stores auth + profile together,
+   so this will usually NO-OP. Kept for safety with minimal behavior.
 ========================= */
 async function ensureCreatorProfileRow(creator) {
   try {
@@ -43,9 +45,11 @@ async function ensureCreatorProfileRow(creator) {
         milestone_enabled,
         milestone_amount,
         milestone_text,
-        updated_at
+        updated_at,
+        email,
+        password_hash
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)
       `,
       username,
       creator?.profile_name || username,
@@ -57,7 +61,9 @@ async function ensureCreatorProfileRow(creator) {
       "#3b82f6",
       0,
       0,
-      ""
+      "",
+      creator?.email || null,
+      creator?.password_hash || null
     );
 
     console.log("[ensureCreatorProfileRow] created profile row for:", username);
@@ -156,29 +162,36 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    const existingEmail = await findCreatorByEmail(email);
+    // ✅ Normalise inputs (prevents weird casing/spacing issues)
+    const cleanUsername = String(username).trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    const existingEmail = await findCreatorByEmail(cleanEmail);
     if (existingEmail) {
       return res.status(409).json({ error: "Email already in use." });
     }
 
-    const existingUser = await getCreatorByUsername(username);
+    const existingUser = await getCreatorByUsername(cleanUsername);
     if (existingUser) {
       return res.status(409).json({ error: "Username already taken." });
     }
 
     const creator = await createCreatorWithPassword({
-      username,
-      email,
+      username: cleanUsername,
+      email: cleanEmail,
       password,
-      display_name: display_name || username,
+      display_name: display_name || cleanUsername,
     });
 
     if (creator) delete creator.password_hash;
 
-    res.status(201).json({ creator });
+    // 🔒 Safety: ensure a row exists (should already exist)
+    await ensureCreatorProfileRow(creator);
+
+    return res.status(201).json({ creator });
   } catch (err) {
     console.error("Signup error:", err);
-    res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -216,14 +229,12 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
 /* =========================
    FORGOT PASSWORD
-   - Generates reset token
-   - Emails reset link via Resend
 ========================= */
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -271,7 +282,6 @@ router.post("/forgot-password", async (req, res) => {
 
 /* =========================
    RESET PASSWORD
-   - Uses token to set new password
 ========================= */
 router.post("/reset-password", async (req, res) => {
   try {
@@ -319,5 +329,3 @@ router.post("/reset-password", async (req, res) => {
 });
 
 export default router;
-
-
