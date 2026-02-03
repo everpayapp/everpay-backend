@@ -12,6 +12,62 @@ import dbPromise, {
 const router = express.Router();
 
 /* =========================
+   Helper: Ensure creator profile row exists
+   (Fixes multi-creator settings for new accounts)
+========================= */
+async function ensureCreatorProfileRow(creator) {
+  try {
+    const username = String(creator?.username || "").trim();
+    if (!username) return;
+
+    const db = await dbPromise;
+
+    const existing = await db.get(
+      "SELECT username FROM creators WHERE username = ? LIMIT 1",
+      username
+    );
+
+    if (existing) return;
+
+    await db.run(
+      `
+      INSERT INTO creators (
+        username,
+        profile_name,
+        bio,
+        avatar_url,
+        social_links,
+        theme_start,
+        theme_mid,
+        theme_end,
+        milestone_enabled,
+        milestone_amount,
+        milestone_text,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `,
+      username,
+      creator?.profile_name || username,
+      "",
+      creator?.avatar_url || "",
+      "[]",
+      "#ec4899",
+      "#8b5cf6",
+      "#3b82f6",
+      0,
+      0,
+      ""
+    );
+
+    console.log("[ensureCreatorProfileRow] created profile row for:", username);
+  } catch (err) {
+    // Never block login if this fails — just log it
+    console.error("ensureCreatorProfileRow error:", err);
+  }
+}
+
+/* =========================
    Helper: Send reset email
 ========================= */
 async function sendResetEmail({ to, resetUrl }) {
@@ -147,6 +203,9 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
+    // ✅ Ensure a profile row exists so settings/theme/avatar work for new creators
+    await ensureCreatorProfileRow(creator);
+
     return res.json({
       creator: {
         username: creator.username,
@@ -260,3 +319,5 @@ router.post("/reset-password", async (req, res) => {
 });
 
 export default router;
+
+
