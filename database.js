@@ -63,6 +63,18 @@ async function init() {
       gift_message TEXT
     )
   `);
+
+  // ---------- Deletion feedback (why users leave) ----------
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS deletion_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT,
+      email TEXT,
+      reason TEXT,
+      detail TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
 }
 
 init();

@@ -13,9 +13,6 @@ const router = express.Router();
 
 /* =========================
    Helper: Ensure creator profile row exists
-   (Fixes multi-creator settings for new accounts)
-   NOTE: Your creators table already stores auth + profile together,
-   so this will usually NO-OP. Kept for safety with minimal behavior.
 ========================= */
 async function ensureCreatorProfileRow(creator) {
   try {
@@ -68,7 +65,6 @@ async function ensureCreatorProfileRow(creator) {
 
     console.log("[ensureCreatorProfileRow] created profile row for:", username);
   } catch (err) {
-    // Never block login if this fails — just log it
     console.error("ensureCreatorProfileRow error:", err);
   }
 }
@@ -79,7 +75,6 @@ async function ensureCreatorProfileRow(creator) {
 async function sendResetEmail({ to, resetUrl }) {
   const apiKey = process.env.RESEND_API_KEY;
 
-  // Use your verified domain sender if set, otherwise fallback
   const from =
     process.env.FROM_EMAIL || "EverPay <no-reply@everpayapp.co.uk>";
 
@@ -88,11 +83,9 @@ async function sendResetEmail({ to, resetUrl }) {
 
   const subject = "Reset your EverPay password";
 
-  // Preview text some clients show next to the subject
   const preheader =
     "Use this link to reset your EverPay password (expires in 1 hour).";
 
-  // Plain-text fallback (important for deliverability + clarity)
   const text = `Reset your EverPay password
 
 Someone requested a password reset for your EverPay creator account.
@@ -162,9 +155,20 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    // ✅ Normalise inputs (prevents weird casing/spacing issues)
-    const cleanUsername = String(username).trim().toLowerCase();
+    // ✅ Strong normalization (prevents spaces/%20 issues forever)
+    const cleanUsername = String(username)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9._-]/g, "");
+
     const cleanEmail = String(email).trim().toLowerCase();
+
+    if (!/^[a-z0-9._-]{3,30}$/.test(cleanUsername)) {
+      return res.status(400).json({
+        error: "Username must be 3–30 chars and use letters/numbers/._- only (no spaces).",
+      });
+    }
 
     const existingEmail = await findCreatorByEmail(cleanEmail);
     if (existingEmail) {
@@ -185,7 +189,6 @@ router.post("/signup", async (req, res) => {
 
     if (creator) delete creator.password_hash;
 
-    // 🔒 Safety: ensure a row exists (should already exist)
     await ensureCreatorProfileRow(creator);
 
     return res.status(201).json({ creator });
@@ -206,7 +209,10 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Missing email or password." });
     }
 
-    const creator = await findCreatorByEmail(email);
+    // ✅ normalize email too
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    const creator = await findCreatorByEmail(cleanEmail);
     if (!creator || !creator.password_hash) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
@@ -216,7 +222,6 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    // ✅ Ensure a profile row exists so settings/theme/avatar work for new creators
     await ensureCreatorProfileRow(creator);
 
     return res.json({
@@ -241,13 +246,12 @@ router.post("/forgot-password", async (req, res) => {
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: "Missing email." });
 
-    const creator = await findCreatorByEmail(String(email).trim());
+    const creator = await findCreatorByEmail(String(email).trim().toLowerCase());
 
-    // Always return success to avoid email enumeration
     if (!creator) return res.json({ success: true });
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     const db = await dbPromise;
 
@@ -261,12 +265,9 @@ router.post("/forgot-password", async (req, res) => {
     const baseUrlRaw = process.env.APP_BASE_URL;
     if (!baseUrlRaw) throw new Error("APP_BASE_URL not set on server.");
 
-    // remove any trailing slash so links are always correct
     const baseUrl = String(baseUrlRaw).replace(/\/+$/, "");
 
-    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(
-      token
-    )}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
     await sendResetEmail({ to: creator.email, resetUrl });
 
@@ -328,5 +329,76 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-export default router;
+/* =========================
+   DELETE ACCOUNT (with reason)
+   - stores feedback
+   - deletes payments + creator
+========================= */
+router.post("/delete-account", async (req, res) => {
+  try {
+    const { username, reason, detail } = req.body || {};
 
+    const cleanUsername = String(username || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9._-]/g, "");
+
+    if (!cleanUsername) {
+      return res.status(400).json({ error: "Missing username." });
+    }
+
+    const cleanReason = String(reason || "").trim();
+    const cleanDetail = String(detail || "").trim();
+
+    const allowedReasons = new Set([
+      "not_using",
+      "too_expensive",
+      "confusing",
+      "missing_features",
+      "privacy_concerns",
+      "found_alternative",
+      "technical_issue",
+      "other",
+    ]);
+
+    if (!allowedReasons.has(cleanReason)) {
+      return res.status(400).json({ error: "Please select a valid reason." });
+    }
+
+    const db = await dbPromise;
+
+    const creator = await db.get(
+      `SELECT username, email FROM creators WHERE username = ?`,
+      cleanUsername
+    );
+
+    if (!creator) {
+      return res.status(404).json({ error: "Creator not found." });
+    }
+
+    // Store feedback first
+    await db.run(
+      `
+      INSERT INTO deletion_feedback (username, email, reason, detail, created_at)
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      creator.username,
+      creator.email || null,
+      cleanReason,
+      cleanDetail || null,
+      new Date().toISOString()
+    );
+
+    // Delete creator data
+    await db.run(`DELETE FROM payments WHERE creator = ?`, cleanUsername);
+    await db.run(`DELETE FROM creators WHERE username = ?`, cleanUsername);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Delete account error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+export default router;
