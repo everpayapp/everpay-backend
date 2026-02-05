@@ -126,11 +126,18 @@ if (
   });
 }
 
-return res.json({
-  url: session.url,
-  connected: !!stripeAccountId,
-  stripe_account_id: stripeAccountId || null,
+    return res.json({
+      url: session.url,
+      connected: !!stripeAccountId,
+      stripe_account_id: stripeAccountId || null,
+    });
+  } catch (err) {
+    console.error("❌ Creator payment session error:", err);
+    return res.status(500).json({
+      error: "Internal server error",
+      stripe_message: err?.message || undefined,
+    });
+  }
 });
-
 
 export default router;
