@@ -25,22 +25,44 @@ async function ensureStripeColumn() {
 }
 ensureStripeColumn();
 
-async function getCreator(username) {
+function norm(u) {
+  return String(u || "").trim();
+}
+
+// ✅ Find creator by username OR profile_name (case-insensitive)
+async function getCreator(usernameOrName) {
   const db = await dbPromise;
+  const u = norm(usernameOrName);
+
   return db.get(
-    "SELECT username, stripe_account_id FROM creators WHERE username = ?",
-    username
+    `
+    SELECT username, stripe_account_id
+    FROM creators
+    WHERE LOWER(username) = LOWER(?)
+       OR LOWER(profile_name) = LOWER(?)
+    LIMIT 1
+    `,
+    u,
+    u
   );
 }
 
-async function setStripeAccountId(username, stripe_account_id) {
+// ✅ Update by actual stored username (not whatever was typed)
+async function setStripeAccountId(usernameOrName, stripe_account_id) {
   const db = await dbPromise;
+  const creator = await getCreator(usernameOrName);
+
+  if (!creator?.username) {
+    throw new Error("Creator not found (cannot set stripe_account_id)");
+  }
+
   await db.run(
     "UPDATE creators SET stripe_account_id = ? WHERE username = ?",
     stripe_account_id,
-    username
+    creator.username
   );
 }
+
 
 /**
  * GET /api/stripe/connect/status?username=lee
