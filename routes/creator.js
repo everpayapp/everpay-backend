@@ -14,18 +14,39 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-async function getStripeAccountId(username) {
+/* ------------------ helpers ------------------ */
+
+function norm(u) {
+  return String(u || "").trim();
+}
+
+// ✅ Find creator by username OR profile_name (case-insensitive)
+async function getStripeAccountId(usernameOrName) {
   const db = await dbPromise;
+  const u = norm(usernameOrName);
+
   const row = await db.get(
-    "SELECT stripe_account_id FROM creators WHERE username = ?",
-    username
+    `
+    SELECT stripe_account_id
+    FROM creators
+    WHERE LOWER(username) = LOWER(?)
+       OR LOWER(profile_name) = LOWER(?)
+    LIMIT 1
+    `,
+    u,
+    u
   );
+
   return row?.stripe_account_id || null;
 }
 
+/* ------------------ routes ------------------ */
+
 router.post("/pay/:username", async (req, res) => {
   try {
-    const { username } = req.params;
+    const { username: rawUsername } = req.params;
+    const username = norm(rawUsername);
+
     const { amount, supporterName, anonymous, gift_message } = req.body;
 
     const amountInt = Number(amount);
@@ -38,7 +59,7 @@ router.post("/pay/:username", async (req, res) => {
     // ✅ Bank-only for creator gifts
     const payment_method_types = ["pay_by_bank"];
 
-    // ✅ If creator connected, charge on THEIR connected Stripe account (direct charge)
+    // ✅ Get connected Stripe account
     const stripeAccountId = await getStripeAccountId(username);
 
     const meta = {
@@ -46,7 +67,9 @@ router.post("/pay/:username", async (req, res) => {
       gift_name: supporterName || "",
       gift_message: gift_message || "",
       anonymous: anonymous ? "true" : "false",
-      source: stripeAccountId ? "creator-direct-charge" : "creator-platform-charge",
+      source: stripeAccountId
+        ? "creator-direct-charge"
+        : "creator-platform-charge",
     };
 
     const sessionParams = {
@@ -66,37 +89,38 @@ router.post("/pay/:username", async (req, res) => {
         },
       ],
 
-      success_url: `${FRONTEND_URL}/creator/${encodeURIComponent(username)}?success=true`,
-      cancel_url: `${FRONTEND_URL}/creator/${encodeURIComponent(username)}?cancel=true`,
+      success_url: `${FRONTEND_URL}/creator/${encodeURIComponent(
+        username
+      )}?success=true`,
+      cancel_url: `${FRONTEND_URL}/creator/${encodeURIComponent(
+        username
+      )}?cancel=true`,
 
-      // Useful for session/webhook lookups
       metadata: meta,
 
-      // Useful if your webhook reads from PaymentIntent metadata
       payment_intent_data: {
         metadata: meta,
       },
     };
 
-    // 🔥 KEY: If connected, create the Checkout Session ON the connected account
+    // 🔥 If creator connected → create session ON their Stripe account
     const session = stripeAccountId
       ? await stripe.checkout.sessions.create(sessionParams, {
           stripeAccount: stripeAccountId,
         })
       : await stripe.checkout.sessions.create(sessionParams);
 
-    // Safety check: ensure pay_by_bank remained the payment method
+    // Safety check
     if (
       !Array.isArray(session.payment_method_types) ||
       session.payment_method_types[0] !== "pay_by_bank"
     ) {
       console.error(
-        "❌ Stripe did not keep pay_by_bank. Returned:",
+        "❌ Stripe changed payment methods:",
         session.payment_method_types
       );
       return res.status(500).json({
-        error:
-          "Pay by Bank not available for this session (Stripe returned different payment methods).",
+        error: "Pay by Bank not available",
         returned_payment_method_types: session.payment_method_types,
       });
     }
