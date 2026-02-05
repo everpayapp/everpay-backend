@@ -103,40 +103,34 @@ router.post("/pay/:username", async (req, res) => {
       },
     };
 
-    // 🔥 If creator connected → create session ON their Stripe account
-    const session = stripeAccountId
-      ? await stripe.checkout.sessions.create(sessionParams, {
-          stripeAccount: stripeAccountId,
-        })
-      : await stripe.checkout.sessions.create(sessionParams);
+// ✅ If creator connected → use DESTINATION CHARGE (platform Checkout + transfer to creator)
+// This keeps Pay by Bank working while still sending funds to the connected account.
+if (stripeAccountId) {
+  sessionParams.payment_intent_data = sessionParams.payment_intent_data || {};
+  sessionParams.payment_intent_data.transfer_data = {
+    destination: stripeAccountId,
+  };
+}
 
-    // Safety check
-    if (
-      !Array.isArray(session.payment_method_types) ||
-      session.payment_method_types[0] !== "pay_by_bank"
-    ) {
-      console.error(
-        "❌ Stripe changed payment methods:",
-        session.payment_method_types
-      );
-      return res.status(500).json({
-        error: "Pay by Bank not available",
-        returned_payment_method_types: session.payment_method_types,
-      });
-    }
+const session = await stripe.checkout.sessions.create(sessionParams);
 
-    return res.json({
-      url: session.url,
-      connected: !!stripeAccountId,
-      stripe_account_id: stripeAccountId || null,
-    });
-  } catch (err) {
-    console.error("❌ Creator payment session error:", err);
-    return res.status(500).json({
-      error: "Internal server error",
-      stripe_message: err?.message || undefined,
-    });
-  }
+// Safety check
+if (
+  !Array.isArray(session.payment_method_types) ||
+  session.payment_method_types[0] !== "pay_by_bank"
+) {
+  console.error("❌ Stripe changed payment methods:", session.payment_method_types);
+  return res.status(500).json({
+    error: "Pay by Bank not available",
+    returned_payment_method_types: session.payment_method_types,
+  });
+}
+
+return res.json({
+  url: session.url,
+  connected: !!stripeAccountId,
+  stripe_account_id: stripeAccountId || null,
 });
+
 
 export default router;
