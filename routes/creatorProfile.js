@@ -3,18 +3,63 @@ import dbPromise from "../database.js";
 
 const router = express.Router();
 
-// GET creator profile
+/* ------------------ helpers ------------------ */
+
+// Decode query param safely (handles %20 and +)
+function decodeUsername(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+
+  const plusFixed = raw.replace(/\+/g, " ");
+
+  try {
+    // Only decode if it looks encoded
+    if (/%[0-9A-Fa-f]{2}/.test(plusFixed)) return decodeURIComponent(plusFixed).trim();
+  } catch {
+    // ignore
+  }
+  return plusFixed.trim();
+}
+
+// Turn any username into a slug form (for matching)
+function toSlug(input) {
+  return String(input || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9._-]/g, "");
+}
+
+function uniq(arr) {
+  return Array.from(new Set(arr.filter(Boolean)));
+}
+
+/* =========================
+   GET creator profile
+   - supports slug OR spaced usernames
+   - case-insensitive match
+   - legacy fallback: match profile_name too
+========================= */
 router.get("/profile", async (req, res) => {
   try {
-    const username = String(req.query.username || "").trim();
-    if (!username) {
-      return res.status(400).json({ error: "Missing username" });
-    }
+    const q = decodeUsername(req.query.username);
+    if (!q) return res.status(400).json({ error: "Missing username" });
+
+    const slug = toSlug(q);
+
+    // Candidates we’ll try
+    const candidates = uniq([
+      q,                  // as provided (decoded)
+      slug,               // slug form
+      q.toLowerCase(),
+      slug.toLowerCase(),
+      encodeURIComponent(q), // just in case something stored encoded historically
+    ]);
 
     const db = await dbPromise;
 
-    // ✅ Avoid referencing non-existent columns (created_at might not exist)
-    // ✅ If duplicates exist, rowid + updated_at is enough to pick latest
+    // Try to find by username (exact or case-insensitive) or profile_name (legacy)
+    // Order prefers exact username match first
     const result = await db.get(
       `
       SELECT
@@ -31,17 +76,22 @@ router.get("/profile", async (req, res) => {
         milestone_text,
         updated_at
       FROM creators
-      WHERE username = ?
+      WHERE
+        username IN (${candidates.map(() => "?").join(", ")})
+        OR LOWER(username) = LOWER(?)
+        OR LOWER(username) = LOWER(?)
+        OR LOWER(profile_name) = LOWER(?)
       ORDER BY COALESCE(updated_at, rowid) DESC
       LIMIT 1
       `,
-      username
+      ...candidates,
+      q,
+      slug,
+      q
     );
 
-    // ✅ Keep old behavior so frontend doesn't break
-    if (!result) {
-      return res.json({});
-    }
+    // keep old behavior
+    if (!result) return res.json({});
 
     let social_links = [];
     try {
@@ -69,15 +119,26 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// UPDATE creator profile
+/* =========================
+   UPDATE creator profile
+   - updates correct row even if username provided is spaced/slug/case variant
+========================= */
 router.post("/profile/update", async (req, res) => {
   try {
     const body = req.body || {};
-    const username = typeof body.username === "string" ? body.username.trim() : "";
+    const incoming = decodeUsername(body.username);
 
-    if (!username) {
-      return res.status(400).json({ error: "Missing username" });
-    }
+    if (!incoming) return res.status(400).json({ error: "Missing username" });
+
+    const slug = toSlug(incoming);
+
+    const candidates = uniq([
+      incoming,
+      slug,
+      incoming.toLowerCase(),
+      slug.toLowerCase(),
+      encodeURIComponent(incoming),
+    ]);
 
     const db = await dbPromise;
 
@@ -101,9 +162,9 @@ router.post("/profile/update", async (req, res) => {
     const milestone_amount = Number(body.milestone_amount) || 0;
     const milestone_text = body.milestone_text ?? "";
 
-    console.log("[profile/update] username:", username);
+    console.log("[profile/update] incoming:", incoming, "slug:", slug);
 
-    // ✅ UPDATE first (affects all duplicates if they exist)
+    // Update any matching row (username exact/case variants OR profile_name legacy)
     const updateResult = await db.run(
       `
       UPDATE creators SET
@@ -118,7 +179,11 @@ router.post("/profile/update", async (req, res) => {
         milestone_amount = ?,
         milestone_text = ?,
         updated_at = CURRENT_TIMESTAMP
-      WHERE username = ?
+      WHERE
+        username IN (${candidates.map(() => "?").join(", ")})
+        OR LOWER(username) = LOWER(?)
+        OR LOWER(username) = LOWER(?)
+        OR LOWER(profile_name) = LOWER(?)
       `,
       profile_name,
       bio,
@@ -130,13 +195,16 @@ router.post("/profile/update", async (req, res) => {
       enabledInt,
       milestone_amount,
       milestone_text,
-      username
+      ...candidates,
+      incoming,
+      slug,
+      incoming
     );
 
     const changes = updateResult?.changes ?? 0;
     console.log("[profile/update] update changes:", changes);
 
-    // ✅ If no row existed, insert one (rare)
+    // If no row existed, insert using slug (new standard)
     if (changes === 0) {
       const insertResult = await db.run(
         `
@@ -156,8 +224,8 @@ router.post("/profile/update", async (req, res) => {
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `,
-        username,
-        profile_name,
+        slug || incoming,
+        profile_name || (slug || incoming),
         bio,
         avatar_url,
         normalizedLinks,
