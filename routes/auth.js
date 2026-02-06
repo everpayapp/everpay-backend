@@ -166,7 +166,8 @@ router.post("/signup", async (req, res) => {
 
     if (!/^[a-z0-9._-]{3,30}$/.test(cleanUsername)) {
       return res.status(400).json({
-        error: "Username must be 3–30 chars and use letters/numbers/._- only (no spaces).",
+        error:
+          "Username must be 3–30 chars and use letters/numbers/._- only (no spaces).",
       });
     }
 
@@ -267,7 +268,9 @@ router.post("/forgot-password", async (req, res) => {
 
     const baseUrl = String(baseUrlRaw).replace(/\/+$/, "");
 
-    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(
+      token
+    )}`;
 
     await sendResetEmail({ to: creator.email, resetUrl });
 
@@ -305,7 +308,8 @@ router.post("/reset-password", async (req, res) => {
       String(token)
     );
 
-    if (!row) return res.status(400).json({ error: "Invalid or expired token." });
+    if (!row)
+      return res.status(400).json({ error: "Invalid or expired token." });
 
     const exp = row.reset_expires ? new Date(row.reset_expires).getTime() : 0;
     if (!exp || Date.now() > exp) {
@@ -397,6 +401,75 @@ router.post("/delete-account", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("Delete account error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+/* =========================
+   TEMP ADMIN: FIX CREATOR USERNAME (ONE-TIME)
+   - Renames creator username and updates payments.creator
+   - Remove after running once
+========================= */
+router.post("/admin/fix-creator-username", async (req, res) => {
+  try {
+    const { fromUsername, toUsername, profileName } = req.body || {};
+
+    const fromU = String(fromUsername || "").trim();
+    const toU = String(toUsername || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9._-]/g, "");
+
+    const display = String(profileName || "").trim();
+
+    if (!fromU || !toU || !display) {
+      return res.status(400).json({
+        error: "Missing fields. Required: fromUsername, toUsername, profileName",
+      });
+    }
+
+    const db = await dbPromise;
+
+    const existingFrom = await db.get(
+      `SELECT username FROM creators WHERE username = ? LIMIT 1`,
+      fromU
+    );
+    if (!existingFrom) {
+      return res.status(404).json({ error: "fromUsername not found" });
+    }
+
+    const existingTo = await db.get(
+      `SELECT username FROM creators WHERE username = ? LIMIT 1`,
+      toU
+    );
+    if (existingTo) {
+      return res.status(409).json({ error: "toUsername already exists" });
+    }
+
+    // Update creators
+    await db.run(
+      `UPDATE creators SET username = ?, profile_name = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?`,
+      toU,
+      display,
+      fromU
+    );
+
+    // Update payments so history follows the creator
+    await db.run(
+      `UPDATE payments SET creator = ? WHERE creator = ?`,
+      toU,
+      fromU
+    );
+
+    return res.json({
+      success: true,
+      fromUsername: fromU,
+      toUsername: toU,
+      profile_name: display,
+    });
+  } catch (err) {
+    console.error("fix-creator-username error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });
