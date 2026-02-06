@@ -10,7 +10,7 @@ import avatarRoutes from "./routes/avatar.js";
 import stripeConnectRoutes from "./routes/stripeConnect.js";
 
 // DB
-import { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
+import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
 
 // ROUTES
 import authRoutes from "./routes/auth.js";
@@ -20,6 +20,27 @@ import creatorRoutes from "./routes/creator.js";
 dotenv.config();
 
 const app = express();
+
+/* ================================
+   HELPERS
+================================ */
+function safeDecode(input) {
+  const raw = String(input ?? "").trim();
+  if (!raw) return "";
+  try {
+    // decode only if it looks encoded
+    if (/%[0-9A-Fa-f]{2}/.test(raw)) return decodeURIComponent(raw);
+    return raw;
+  } catch {
+    return raw;
+  }
+}
+
+// Normalize creator id in ONE place (this keeps your system stable)
+function normalizeCreatorKey(input) {
+  // decode %20 -> space, trim, keep original casing (don’t force lowercase yet)
+  return safeDecode(input).trim();
+}
 
 /* ================================
    ENV VALIDATION
@@ -63,21 +84,20 @@ app.post(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
 
-      try {
-        await storePayment({
-          id: session.id,
-          amount: session.amount_total,
-          email: session.customer_email,
-          creator: session.metadata?.creator || null,
-          status: session.payment_status,
-          created_at: new Date().toISOString(),
-          gift_name: session.metadata?.gift_name || null,
-          anonymous: session.metadata?.anonymous === "true" ? 1 : 0,
-          gift_message: session.metadata?.gift_message || null,
-        });
-      } catch (e) {
-        console.error("❌ storePayment failed:", e);
-      }
+      // ✅ Make sure creator is stored decoded (NOT %20)
+      const creatorKey = normalizeCreatorKey(session.metadata?.creator || "");
+
+      await storePayment({
+        id: session.id,
+        amount: session.amount_total,
+        email: session.customer_email,
+        creator: creatorKey || null,
+        status: session.payment_status,
+        created_at: new Date().toISOString(),
+        gift_name: session.metadata?.gift_name || null,
+        anonymous: session.metadata?.anonymous === "true" ? 1 : 0,
+        gift_message: session.metadata?.gift_message || null,
+      });
     }
 
     res.json({ received: true });
@@ -126,83 +146,26 @@ app.get("/api/payments", async (req, res) => {
   }
 });
 
-// helper: make safe decode
-function safeDecode(s) {
+// ✅ Existing route (keep it)
+app.get("/api/payments/:creator", async (req, res) => {
   try {
-    return decodeURIComponent(s);
-  } catch {
-    return s;
-  }
-}
-
-// helper: dedupe by id
-function dedupeById(list) {
-  const map = new Map();
-  for (const item of list) map.set(item.id, item);
-  return Array.from(map.values());
-}
-
-// ✅ NEW: canonical creator payments route your frontend expects
-app.get("/api/payments/creator/:username", async (req, res) => {
-  try {
-    const usernameRaw = String(req.params.username || "");
-    const decoded = safeDecode(usernameRaw);
-    const encoded = encodeURIComponent(decoded);
-
-    // try multiple possibilities (because older rows were stored encoded)
-    const candidates = Array.from(
-      new Set(
-        [decoded, encoded, usernameRaw, safeDecode(decoded)]
-          .map((x) => String(x || "").trim())
-          .filter(Boolean)
-      )
-    );
-
-    let all = [];
-    for (const c of candidates) {
-      const rows = await getPaymentsByCreator(c);
-      if (Array.isArray(rows) && rows.length) all = all.concat(rows);
-    }
-
-    const merged = dedupeById(all).sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    res.json(merged || []);
+    const creator = normalizeCreatorKey(req.params.creator);
+    const rows = await getPaymentsByCreator(creator);
+    res.json(rows || []);
   } catch (err) {
-    console.error("❌ /api/payments/creator/:username error:", err);
+    console.error("❌ /api/payments/:creator error:", err);
     res.status(500).json({ error: "Failed to load creator payments" });
   }
 });
 
-// ✅ Keep the older route too (gift page currently uses /api/payments/:creator)
-app.get("/api/payments/:creator", async (req, res) => {
+// ✅ NEW alias route (your frontend/dev expects this)
+app.get("/api/payments/creator/:username", async (req, res) => {
   try {
-    const creatorRaw = String(req.params.creator || "");
-    const decoded = safeDecode(creatorRaw);
-    const encoded = encodeURIComponent(decoded);
-
-    const candidates = Array.from(
-      new Set(
-        [decoded, encoded, creatorRaw, safeDecode(decoded)]
-          .map((x) => String(x || "").trim())
-          .filter(Boolean)
-      )
-    );
-
-    let all = [];
-    for (const c of candidates) {
-      const rows = await getPaymentsByCreator(c);
-      if (Array.isArray(rows) && rows.length) all = all.concat(rows);
-    }
-
-    const merged = dedupeById(all).sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    res.json(merged || []);
+    const username = normalizeCreatorKey(req.params.username);
+    const rows = await getPaymentsByCreator(username);
+    res.json(rows || []);
   } catch (err) {
-    console.error("❌ /api/payments/:creator error:", err);
+    console.error("❌ /api/payments/creator/:username error:", err);
     res.status(500).json({ error: "Failed to load creator payments" });
   }
 });
@@ -229,4 +192,3 @@ app.listen(PORT_TO_USE, () => {
   console.log("👤 Creator profile: /api/creator/profile");
   console.log("🎁 Creator pay: POST /creator/pay/:username");
 });
-
