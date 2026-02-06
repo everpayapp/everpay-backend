@@ -16,7 +16,6 @@ const dbPromise = open({
 async function init() {
   const db = await dbPromise;
 
-  // ---------- Creators table ----------
   await db.exec(`
     CREATE TABLE IF NOT EXISTS creators (
       username TEXT PRIMARY KEY,
@@ -34,13 +33,8 @@ async function init() {
     )
   `);
 
-  // ---------- SAFE COLUMN ADDS (VERY IMPORTANT) ----------
   const safeAlter = async (sql) => {
-    try {
-      await db.exec(sql);
-    } catch {
-      // column already exists — ignore
-    }
+    try { await db.exec(sql); } catch {}
   };
 
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_enabled INTEGER DEFAULT 0`);
@@ -48,8 +42,8 @@ async function init() {
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_text TEXT DEFAULT ''`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_token TEXT`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_expires TEXT`);
+  await safeAlter(`ALTER TABLE creators ADD COLUMN stripe_account_id TEXT`);
 
-  // ---------- Payments table ----------
   await db.exec(`
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
@@ -64,7 +58,6 @@ async function init() {
     )
   `);
 
-  // ---------- Deletion feedback (why users leave) ----------
   await db.exec(`
     CREATE TABLE IF NOT EXISTS deletion_feedback (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,7 +72,9 @@ async function init() {
 
 init();
 
-// ---------- Store a payment ----------
+const norm = (v) => String(v || "").trim();
+
+// ---------- Store payment ----------
 async function storePayment(payment) {
   const db = await dbPromise;
   return db.run(
@@ -87,8 +82,7 @@ async function storePayment(payment) {
     INSERT OR REPLACE INTO payments (
       id, amount, email, creator, status, created_at,
       gift_name, anonymous, gift_message
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     payment.id,
     payment.amount,
@@ -109,7 +103,7 @@ async function getPayments(limit = 100) {
     `
     SELECT p.*, c.profile_name
     FROM payments p
-    LEFT JOIN creators c ON p.creator = c.username
+    LEFT JOIN creators c ON LOWER(p.creator)=LOWER(c.username)
     ORDER BY datetime(p.created_at) DESC
     LIMIT ?
     `,
@@ -119,38 +113,43 @@ async function getPayments(limit = 100) {
 
 async function getPaymentsByCreator(username, limit = 100) {
   const db = await dbPromise;
+  const u = norm(username);
+
   return db.all(
     `
     SELECT p.*, c.profile_name
     FROM payments p
-    LEFT JOIN creators c ON p.creator = c.username
-    WHERE p.creator = ?
+    LEFT JOIN creators c ON LOWER(p.creator)=LOWER(c.username)
+    WHERE LOWER(p.creator)=LOWER(?)
     ORDER BY datetime(p.created_at) DESC
     LIMIT ?
     `,
-    username,
+    u,
     limit
   );
 }
 
 async function getCreatorPayments(username) {
   const db = await dbPromise;
+  const u = norm(username);
+
   return db.all(
     `
     SELECT p.*, c.profile_name
     FROM payments p
-    LEFT JOIN creators c ON p.creator = c.username
-    WHERE p.creator = ?
+    LEFT JOIN creators c ON LOWER(p.creator)=LOWER(c.username)
+    WHERE LOWER(p.creator)=LOWER(?)
     ORDER BY datetime(p.created_at) DESC
     `,
-    username
+    u
   );
 }
 
 // ---------- Creators ----------
 async function getCreatorByUsername(username) {
   const db = await dbPromise;
-  return db.get(`SELECT * FROM creators WHERE username = ?`, username);
+  const u = norm(username);
+  return db.get(`SELECT * FROM creators WHERE LOWER(username)=LOWER(?)`, u);
 }
 
 async function getCreatorProfile(username) {
@@ -159,23 +158,16 @@ async function getCreatorProfile(username) {
 
 async function saveCreatorProfile(profile) {
   const db = await dbPromise;
+
+  const u = norm(profile.username);
+
   return db.run(
     `
     INSERT INTO creators (
-      username,
-      profile_name,
-      bio,
-      avatar_url,
-      social_links,
-      theme_start,
-      theme_mid,
-      theme_end,
-      milestone_enabled,
-      milestone_amount,
-      milestone_text,
-      updated_at,
-      email,
-      password_hash
+      username, profile_name, bio, avatar_url, social_links,
+      theme_start, theme_mid, theme_end,
+      milestone_enabled, milestone_amount, milestone_text,
+      updated_at, email, password_hash
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(username) DO UPDATE SET
@@ -191,7 +183,7 @@ async function saveCreatorProfile(profile) {
       milestone_text = excluded.milestone_text,
       updated_at = excluded.updated_at
     `,
-    profile.username,
+    u,
     profile.profile_name ?? "",
     profile.bio ?? "",
     profile.avatar_url ?? "",
@@ -210,14 +202,13 @@ async function saveCreatorProfile(profile) {
 
 async function updateCreatorAvatarUrl(username, avatarUrl) {
   const db = await dbPromise;
+  const u = norm(username);
 
   await db.run(
-    `UPDATE creators
-     SET avatar_url = ?, updated_at = ?
-     WHERE username = ?`,
+    `UPDATE creators SET avatar_url=?, updated_at=? WHERE LOWER(username)=LOWER(?)`,
     avatarUrl,
     new Date().toISOString(),
-    username
+    u
   );
 
   return true;
@@ -225,35 +216,31 @@ async function updateCreatorAvatarUrl(username, avatarUrl) {
 
 async function updateCreatorUsername(oldUsername, newUsername) {
   const db = await dbPromise;
+
   return db.run(
     `
     UPDATE creators
-    SET username = ?, last_username_change = ?
-    WHERE username = ?
+    SET username=?, last_username_change=?
+    WHERE LOWER(username)=LOWER(?)
     `,
-    newUsername,
+    norm(newUsername),
     new Date().toISOString(),
-    oldUsername
+    norm(oldUsername)
   );
 }
 
 // ---------- Auth ----------
 async function findCreatorByEmail(email) {
   const db = await dbPromise;
-  const cleanEmail = String(email || "").trim().toLowerCase();
-  return db.get(`SELECT * FROM creators WHERE LOWER(email) = ?`, cleanEmail);
+  const cleanEmail = norm(email).toLowerCase();
+  return db.get(`SELECT * FROM creators WHERE LOWER(email)=?`, cleanEmail);
 }
 
-/**
- * IMPORTANT:
- * - We ALWAYS use the username provided by the user (never derive from email).
- * - We return the row by username (not by email), so we never accidentally pick the wrong row.
- */
 async function createCreatorWithPassword({ username, email, password, display_name }) {
   const db = await dbPromise;
 
-  const cleanUsername = String(username || "").trim().toLowerCase();
-  const cleanEmail = String(email || "").trim().toLowerCase();
+  const cleanUsername = norm(username).toLowerCase();
+  const cleanEmail = norm(email).toLowerCase();
 
   if (!cleanUsername || !cleanEmail || !password) {
     throw new Error("Missing required fields");
@@ -279,7 +266,7 @@ async function createCreatorWithPassword({ username, email, password, display_na
 
 async function getCreatorById(id) {
   const db = await dbPromise;
-  return db.get(`SELECT rowid, * FROM creators WHERE rowid = ?`, id);
+  return db.get(`SELECT rowid, * FROM creators WHERE rowid=?`, id);
 }
 
 export {
@@ -298,4 +285,3 @@ export {
 };
 
 export default dbPromise;
-
