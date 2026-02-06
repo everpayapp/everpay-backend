@@ -4,15 +4,16 @@ import cors from "cors";
 import dotenv from "dotenv";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
-import avatarRoutes from "./routes/avatar.js";
 
-// ✅ NEW: Stripe Connect routes
+import avatarRoutes from "./routes/avatar.js";
 import stripeConnectRoutes from "./routes/stripeConnect.js";
 
-// DB
-import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.js";
+import db, {
+  storePayment,
+  getPayments,
+  getPaymentsByCreator
+} from "./database.js";
 
-// ROUTES
 import authRoutes from "./routes/auth.js";
 import creatorProfileRoutes from "./routes/creatorProfile.js";
 import creatorRoutes from "./routes/creator.js";
@@ -24,7 +25,12 @@ const app = express();
 /* ================================
    ENV VALIDATION
 ================================ */
-const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL, PORT } = process.env;
+const {
+  STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET,
+  FRONTEND_URL,
+  PORT
+} = process.env;
 
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   console.error("❌ Missing Stripe environment variables");
@@ -54,7 +60,11 @@ app.post(
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        STRIPE_WEBHOOK_SECRET
+      );
     } catch (err) {
       console.error("❌ Webhook signature failed:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -93,7 +103,7 @@ app.use("/api/creator", creatorProfileRoutes);
 app.use("/api/creator", avatarRoutes);
 app.use("/creator", creatorRoutes);
 
-// ✅ NEW: Connect endpoints
+// Stripe Connect
 app.use("/api/stripe", stripeConnectRoutes);
 
 /* ================================
@@ -109,11 +119,13 @@ app.get("/", (req, res) => {
 });
 
 /* ================================
-   PAYMENTS API
+   PAYMENTS API (FULL FIX)
 ================================ */
+
+// Main EverPay dashboard
 app.get("/api/payments", async (req, res) => {
   try {
-    const limit = Number(req.query.limit) || 10;
+    const limit = Number(req.query.limit) || 100;
     const rows = await getPayments(limit);
     res.json(rows || []);
   } catch (err) {
@@ -122,6 +134,19 @@ app.get("/api/payments", async (req, res) => {
   }
 });
 
+// ✅ Creator payments (new route used by frontend)
+app.get("/api/payments/creator/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+    const rows = await getPaymentsByCreator(username);
+    res.json(rows || []);
+  } catch (err) {
+    console.error("❌ /api/payments/creator/:username error:", err);
+    res.status(500).json({ error: "Failed to load creator payments" });
+  }
+});
+
+// ✅ Legacy support (won’t break old calls)
 app.get("/api/payments/:creator", async (req, res) => {
   try {
     const { creator } = req.params;
@@ -134,14 +159,11 @@ app.get("/api/payments/:creator", async (req, res) => {
 });
 
 /* ================================
-   DEPRECATED CARD ROUTE (DISABLED)
-   This route was causing Stripe sessions
-   to be created with ["card"].
+   DEPRECATED CARD ROUTE
 ================================ */
 app.get("/pay", (req, res) => {
   return res.status(410).json({
     error: "Deprecated. Use POST /creator/pay/:username",
-    example: "POST /creator/pay/lee  { amount: 500, supporterName: 'Test', ... }",
   });
 });
 
@@ -153,7 +175,6 @@ const PORT_TO_USE = PORT || 5000;
 app.listen(PORT_TO_USE, () => {
   console.log(`✅ EverPay Backend running on port ${PORT_TO_USE}`);
   console.log("📡 Webhook endpoint: POST /webhook");
-  console.log("🔐 Auth endpoints: /api/auth/login | /api/auth/signup");
   console.log("👤 Creator profile: /api/creator/profile");
   console.log("🎁 Creator pay: POST /creator/pay/:username");
 });
