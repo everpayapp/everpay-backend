@@ -73,7 +73,11 @@ router.post("/pay/:username", async (req, res) => {
 
     const amountInt = Number(amount);
 
-    const everpayFee = Math.round(amountInt * 0.025);
+    // ✅ Supporter covers EverPay fee (2.5%) on top of the gift
+    const giftAmount = Math.round(amountInt); // in pence
+    const everpayFee = Math.round(giftAmount * 0.025);
+    const totalCharge = giftAmount + everpayFee;
+
 
     // amount is in pence
     if (!Number.isFinite(amountInt) || amountInt < 50) {
@@ -108,7 +112,7 @@ router.post("/pay/:username", async (req, res) => {
           price_data: {
             currency: "gbp",
             product_data: { name: `Gift for @${username}` },
-            unit_amount: Math.round(amountInt),
+            unit_amount: totalCharge,
           },
           quantity: 1,
         },
