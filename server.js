@@ -16,6 +16,7 @@ import db, { storePayment, getPayments, getPaymentsByCreator } from "./database.
 import authRoutes from "./routes/auth.js";
 import creatorProfileRoutes from "./routes/creatorProfile.js";
 import creatorRoutes from "./routes/creator.js";
+import prizePoolRoutes from "./routes/prizePool.js";
 
 dotenv.config();
 
@@ -119,6 +120,9 @@ app.use("/creator", creatorRoutes);
 
 // ✅ Connect endpoints
 app.use("/api/stripe", stripeConnectRoutes);
+
+// 🎁 Prize Pool (live monthly total)
+app.use("/api/prize-pool", prizePoolRoutes);
 
 /* ================================
    ROOT
