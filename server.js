@@ -17,6 +17,7 @@ import authRoutes from "./routes/auth.js";
 import creatorProfileRoutes from "./routes/creatorProfile.js";
 import creatorRoutes from "./routes/creator.js";
 import prizePoolRoutes from "./routes/prizePool.js";
+import topSupportersRoutes from "./routes/topSupporters.js";
 
 dotenv.config();
 
@@ -123,6 +124,9 @@ app.use("/api/stripe", stripeConnectRoutes);
 
 // 🎁 Prize Pool (live monthly total)
 app.use("/api/prize-pool", prizePoolRoutes);
+
+// 🏆 Top Supporters (live monthly leaderboard)
+app.use("/api/top-supporters", topSupportersRoutes);
 
 /* ================================
    ROOT
