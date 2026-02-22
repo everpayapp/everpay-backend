@@ -28,34 +28,49 @@ router.post(
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-      const amount = session.amount_total;
+
+      const meta = session.metadata || {};
+
+      // Stripe reports TOTAL paid in amount_total (gift + EverPay fee)
+      const stripeTotal = typeof session.amount_total === "number" ? session.amount_total : 0;
+
+      // ✅ Prefer our metadata breakdown (Option 2)
+      const gift_amount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
+      const fee_amount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
+      const total_paid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
+
+      // Backward compatible defaults (old sessions without metadata)
+      const gift = Number.isInteger(gift_amount) ? gift_amount : stripeTotal;
+      const fee = Number.isInteger(fee_amount) ? fee_amount : 0;
+      const total = Number.isInteger(total_paid) ? total_paid : (stripeTotal || (gift + fee));
+
       const email = session.customer_details?.email ?? null;
       const timestamp = new Date().toISOString();
 
       // Creator username
       const creator =
-        session.metadata?.creator ||
+        meta.creator ||
         session.payment_intent?.metadata?.creator ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.creator ||
         "";
 
       // Supporter name
       const gift_name =
-        session.metadata?.gift_name ||
+        meta.gift_name ||
         session.payment_intent?.metadata?.gift_name ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.gift_name ||
         "";
 
       // Supporter message
       const gift_message =
-        session.metadata?.gift_message ||
+        meta.gift_message ||
         session.payment_intent?.metadata?.gift_message ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.gift_message ||
         "";
 
       // Anonymous flag
       const anonymous_str =
-        session.metadata?.anonymous ||
+        meta.anonymous ||
         session.payment_intent?.metadata?.anonymous ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.anonymous ||
         "false";
@@ -65,18 +80,26 @@ router.post(
       try {
         await storePayment({
           id: session.id,
-          amount,
+
+          // ✅ Legacy + creator-facing amount = GIFT ONLY
+          amount: gift,
+
+          // ✅ New breakdown fields
+          gift_amount: gift,
+          fee_amount: fee,
+          total_paid: total,
+
           email,
           creator,
           gift_name,
           gift_message,
-          anonymous: anonymous ? 1 : 0,   // ← SQLite fix
+          anonymous: anonymous ? 1 : 0,
           status: session.payment_status || "succeeded",
           created_at: timestamp,
         });
 
         console.log(
-          `💾 Payment recorded → £${amount / 100} (creator: ${creator} | name: ${gift_name} | anonymous: ${anonymous})`
+          `💾 Payment recorded → gift £${gift / 100} (fee £${fee / 100}, total £${total / 100}) (creator: ${creator} | name: ${gift_name} | anonymous: ${anonymous})`
         );
       } catch (err) {
         console.error("❌ Failed to store payment:", err);

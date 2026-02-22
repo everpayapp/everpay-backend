@@ -34,7 +34,9 @@ async function init() {
   `);
 
   const safeAlter = async (sql) => {
-    try { await db.exec(sql); } catch {}
+    try {
+      await db.exec(sql);
+    } catch {}
   };
 
   await safeAlter(`ALTER TABLE creators ADD COLUMN milestone_enabled INTEGER DEFAULT 0`);
@@ -58,6 +60,24 @@ async function init() {
     )
   `);
 
+  // ✅ Option 2: Gift/Fee/Total tracking (safe + backward compatible)
+  await safeAlter(`ALTER TABLE payments ADD COLUMN gift_amount INTEGER`);
+  await safeAlter(`ALTER TABLE payments ADD COLUMN fee_amount INTEGER`);
+  await safeAlter(`ALTER TABLE payments ADD COLUMN total_paid INTEGER`);
+
+  // ✅ Backfill existing rows so nothing breaks
+  // - treat existing `amount` as gift_amount
+  // - fee defaults to 0
+  // - total defaults to gift
+  await db.exec(`
+    UPDATE payments
+    SET
+      gift_amount = COALESCE(gift_amount, amount),
+      fee_amount  = COALESCE(fee_amount, 0),
+      total_paid  = COALESCE(total_paid, amount)
+    WHERE gift_amount IS NULL OR fee_amount IS NULL OR total_paid IS NULL;
+  `);
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS deletion_feedback (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,15 +97,25 @@ const norm = (v) => String(v || "").trim();
 // ---------- Store payment ----------
 async function storePayment(payment) {
   const db = await dbPromise;
+
+  // ✅ Keep legacy `amount` as GIFT amount (creator-visible)
+  const gift = Number.isInteger(payment.gift_amount) ? payment.gift_amount : payment.amount;
+  const fee = Number.isInteger(payment.fee_amount) ? payment.fee_amount : 0;
+  const total = Number.isInteger(payment.total_paid) ? payment.total_paid : gift + fee;
+
   return db.run(
     `
     INSERT OR REPLACE INTO payments (
-      id, amount, email, creator, status, created_at,
+      id, amount, gift_amount, fee_amount, total_paid,
+      email, creator, status, created_at,
       gift_name, anonymous, gift_message
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     payment.id,
-    payment.amount,
+    gift,          // amount (legacy) = gift
+    gift,          // gift_amount
+    fee,           // fee_amount
+    total,         // total_paid
     payment.email,
     payment.creator,
     payment.status,

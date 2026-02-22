@@ -73,16 +73,15 @@ router.post("/pay/:username", async (req, res) => {
 
     const amountInt = Number(amount);
 
-    // ✅ Supporter covers EverPay fee (2.5%) on top of the gift
-    const giftAmount = Math.round(amountInt); // in pence
-    const everpayFee = Math.round(giftAmount * 0.025);
-    const totalCharge = giftAmount + everpayFee;
-
-
     // amount is in pence
     if (!Number.isFinite(amountInt) || amountInt < 50) {
       return res.status(400).json({ error: "Invalid amount (min 50p)" });
     }
+
+    // ✅ Supporter covers EverPay fee (2.5%) on top of the gift
+    const giftAmount = Math.round(amountInt); // in pence
+    const everpayFee = Math.round(giftAmount * 0.025);
+    const totalCharge = giftAmount + everpayFee;
 
     // ✅ Bank-only for creator gifts
     const payment_method_types = ["pay_by_bank"];
@@ -91,11 +90,18 @@ router.post("/pay/:username", async (req, res) => {
     const stripeAccountId = await getStripeAccountId(username);
 
     // ✅ metadata creator MUST be canonical (never %20)
+    // ✅ include gift/fee/total so webhook can store correctly (Option 2)
     const meta = {
       creator: username,
       gift_name: supporterName || "",
       gift_message: gift_message || "",
       anonymous: anonymous ? "true" : "false",
+
+      // Option 2 breakdown (all in pence)
+      gift_amount: String(giftAmount),
+      fee_amount: String(everpayFee),
+      total_paid: String(totalCharge),
+
       source: stripeAccountId
         ? "creator-direct-charge"
         : "creator-platform-charge",
@@ -112,7 +118,7 @@ router.post("/pay/:username", async (req, res) => {
           price_data: {
             currency: "gbp",
             product_data: { name: `Gift for @${username}` },
-            unit_amount: totalCharge,
+            unit_amount: totalCharge, // supporter pays gift + fee
           },
           quantity: 1,
         },
@@ -168,4 +174,3 @@ router.post("/pay/:username", async (req, res) => {
 });
 
 export default router;
-
