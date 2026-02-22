@@ -6,8 +6,8 @@ const router = express.Router();
 
 const norm = (v) => String(v || "").trim().toLowerCase();
 
-// Use the same fee you charge supporters (2.5% default).
-// If you already set an env var, we’ll respect it.
+// Kept for response/debugging consistency (not used for math anymore)
+// because Option 2 stores gift vs total explicitly.
 function getSupporterFeeBps() {
   const raw =
     process.env.SUPPORTER_FEE_BPS ??
@@ -35,16 +35,11 @@ router.get("/:username", async (req, res) => {
     const nextIso = next.toISOString();
 
     const supporterFeeBps = getSupporterFeeBps();
-    const divisor = 1 + supporterFeeBps / 10000;
-
     const db = await dbPromise;
 
-    // IMPORTANT:
-    // We support BOTH legacy rows and new Option 2 rows:
-    // - Legacy: payments.amount was TOTAL paid (gift+fee). No gift_amount/total_paid columns existed.
-    // - Option 2: amount & gift_amount are GIFT only; total_paid stores TOTAL paid.
-    //
-    // We return "gift_total_*" as gift-only. For legacy we remove fee via divisor.
+    // Option 2 truth:
+    // - gift_amount (or fallback amount) is what creators should see
+    // - total_paid (or fallback amount) is what the supporter actually paid
     const rows = await db.all(
       `
       SELECT
@@ -79,22 +74,19 @@ router.get("/:username", async (req, res) => {
       const giftSum = Number(r.gift_sum_pence) || 0;
       const totalSum = Number(r.total_sum_pence) || 0;
 
-      // If total > gift, we're on Option 2 and giftSum is already fee-free.
-      // Otherwise it's legacy (gift==total), so remove fee by dividing.
-      const giftPence = totalSum > giftSum ? giftSum : Math.round(totalSum / divisor);
-      const paidPence = totalSum;
-
       const name = Number(r.anonymous) === 1 ? "Anonymous" : String(r.supporter_name || "Someone");
 
       return {
         name,
         gifts_count: Number(r.gifts_count) || 0,
-        gift_total_pence: giftPence,
-        gift_total_gbp: Math.round(giftPence) / 100,
 
-        // Keep for debugging/optional analytics:
-        total_paid_pence: paidPence,
-        total_paid_gbp: Math.round(paidPence) / 100,
+        // ✅ Always gift-only leaderboard totals
+        gift_total_pence: giftSum,
+        gift_total_gbp: Math.round(giftSum) / 100,
+
+        // Optional debug/analytics:
+        total_paid_pence: totalSum,
+        total_paid_gbp: Math.round(totalSum) / 100,
       };
     });
 
