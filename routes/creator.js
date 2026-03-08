@@ -163,13 +163,6 @@ router.post("/pay/:username", async (req, res) => {
       connected: !!stripeAccountId,
       stripe_account_id: stripeAccountId || null,
       creator: username,
-      debug: {
-        input_amount: amountInt,
-        gift_amount: giftAmount,
-        everpay_fee: everpayFee,
-        total_charge: totalCharge,
-        metadata: meta,
-      },
     });
   } catch (err) {
     console.error("❌ Creator payment session error:", err);
