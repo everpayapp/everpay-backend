@@ -32,17 +32,40 @@ router.post(
       const meta = session.metadata || {};
 
       // Stripe reports TOTAL paid in amount_total (gift + EverPay fee)
-      const stripeTotal = typeof session.amount_total === "number" ? session.amount_total : 0;
+      const stripeTotal =
+        typeof session.amount_total === "number" ? session.amount_total : 0;
 
-      // ✅ Prefer our metadata breakdown (Option 2)
+      // ✅ Prefer metadata breakdown first
       const gift_amount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
       const fee_amount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
       const total_paid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
 
-      // Backward compatible defaults (old sessions without metadata)
-      const gift = Number.isInteger(gift_amount) ? gift_amount : stripeTotal;
-      const fee = Number.isInteger(fee_amount) ? fee_amount : 0;
-      const total = Number.isInteger(total_paid) ? total_paid : (stripeTotal || (gift + fee));
+      // ✅ Fallback: derive gift + fee from total when metadata is missing
+      function deriveGiftBreakdownFromTotal(totalPence) {
+        const total = Number(totalPence) || 0;
+
+        if (!total || total <= 0) {
+          return { gift: 0, fee: 0, total: 0 };
+        }
+
+        // EverPay fee = round(gift * 0.025)
+        // Find the gift amount that produces this exact total
+        for (let gift = total; gift >= Math.max(0, total - 100); gift--) {
+          const fee = Math.round(gift * 0.025);
+          if (gift + fee === total) {
+            return { gift, fee, total };
+          }
+        }
+
+        // Final fallback
+        return { gift: total, fee: 0, total };
+      }
+
+      const derived = deriveGiftBreakdownFromTotal(stripeTotal);
+
+      const gift = Number.isInteger(gift_amount) ? gift_amount : derived.gift;
+      const fee = Number.isInteger(fee_amount) ? fee_amount : derived.fee;
+      const total = Number.isInteger(total_paid) ? total_paid : derived.total;
 
       const email = session.customer_details?.email ?? null;
       const timestamp = new Date().toISOString();
