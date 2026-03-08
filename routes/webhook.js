@@ -31,11 +31,14 @@ router.post(
 
       const meta = session.metadata || {};
 
+      console.log("🔎 Stripe session amount_total:", session.amount_total);
+      console.log("🔎 Stripe session metadata:", JSON.stringify(meta, null, 2));
+
       // Stripe reports TOTAL paid in amount_total (gift + EverPay fee)
       const stripeTotal =
         typeof session.amount_total === "number" ? session.amount_total : 0;
 
-      // ✅ Prefer metadata breakdown first
+      // ✅ Prefer our metadata breakdown first
       const gift_amount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
       const fee_amount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
       const total_paid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
