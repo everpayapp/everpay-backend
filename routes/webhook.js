@@ -12,7 +12,6 @@ router.post(
   "/",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    console.log("🚨 WEBHOOK HIT");
     let event;
 
     try {
