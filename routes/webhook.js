@@ -64,9 +64,7 @@ router.post(
         rawGiftAmount + rawFeeAmount === rawTotalPaid &&
         rawTotalPaid > 0;
 
-      const useMetadata =
-        metadataLooksValid &&
-        !(rawFeeAmount === 0 && rawGiftAmount === rawTotalPaid && rawTotalPaid === stripeTotal);
+      const useMetadata = metadataLooksValid;
 
       const gift = useMetadata ? rawGiftAmount : derived.gift;
       const fee = useMetadata ? rawFeeAmount : derived.fee;
