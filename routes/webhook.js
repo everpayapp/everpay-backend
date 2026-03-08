@@ -28,22 +28,15 @@ router.post(
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-
       const meta = session.metadata || {};
 
-      console.log("🔎 Stripe session amount_total:", session.amount_total);
-      console.log("🔎 Stripe session metadata:", JSON.stringify(meta, null, 2));
-
-      // Stripe reports TOTAL paid in amount_total (gift + EverPay fee)
       const stripeTotal =
         typeof session.amount_total === "number" ? session.amount_total : 0;
 
-      // ✅ Prefer our metadata breakdown first
-      const gift_amount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
-      const fee_amount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
-      const total_paid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
+      const rawGiftAmount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
+      const rawFeeAmount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
+      const rawTotalPaid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
 
-      // ✅ Fallback: derive gift + fee from total when metadata is missing
       function deriveGiftBreakdownFromTotal(totalPence) {
         const total = Number(totalPence) || 0;
 
@@ -60,41 +53,51 @@ router.post(
           }
         }
 
-        // Final fallback
         return { gift: total, fee: 0, total };
       }
 
-      const derived = deriveGiftBreakdownFromTotal(stripeTotal);
+      const derived = deriveGiftBreakdownFromTotal(
+        rawTotalPaid ?? stripeTotal
+      );
 
-      const gift = Number.isInteger(gift_amount) ? gift_amount : derived.gift;
-      const fee = Number.isInteger(fee_amount) ? fee_amount : derived.fee;
-      const total = Number.isInteger(total_paid) ? total_paid : derived.total;
+      // Only trust metadata if it looks internally correct
+      const metadataLooksValid =
+        Number.isInteger(rawGiftAmount) &&
+        Number.isInteger(rawFeeAmount) &&
+        Number.isInteger(rawTotalPaid) &&
+        rawGiftAmount + rawFeeAmount === rawTotalPaid &&
+        rawTotalPaid > 0;
+
+      // If metadata says 205 / 0 / 205, that is not usable for EverPay fee pass-through
+      const useMetadata =
+        metadataLooksValid &&
+        !(rawFeeAmount === 0 && rawGiftAmount === rawTotalPaid && rawTotalPaid === stripeTotal);
+
+      const gift = useMetadata ? rawGiftAmount : derived.gift;
+      const fee = useMetadata ? rawFeeAmount : derived.fee;
+      const total = useMetadata ? rawTotalPaid : derived.total;
 
       const email = session.customer_details?.email ?? null;
       const timestamp = new Date().toISOString();
 
-      // Creator username
       const creator =
         meta.creator ||
         session.payment_intent?.metadata?.creator ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.creator ||
         "";
 
-      // Supporter name
       const gift_name =
         meta.gift_name ||
         session.payment_intent?.metadata?.gift_name ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.gift_name ||
         "";
 
-      // Supporter message
       const gift_message =
         meta.gift_message ||
         session.payment_intent?.metadata?.gift_message ||
         session.payment_intent?.charges?.data?.[0]?.metadata?.gift_message ||
         "";
 
-      // Anonymous flag
       const anonymous_str =
         meta.anonymous ||
         session.payment_intent?.metadata?.anonymous ||
@@ -106,15 +109,10 @@ router.post(
       try {
         await storePayment({
           id: session.id,
-
-          // ✅ Legacy + creator-facing amount = GIFT ONLY
           amount: gift,
-
-          // ✅ New breakdown fields
           gift_amount: gift,
           fee_amount: fee,
           total_paid: total,
-
           email,
           creator,
           gift_name,
