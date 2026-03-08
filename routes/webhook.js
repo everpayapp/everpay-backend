@@ -12,6 +12,7 @@ router.post(
   "/",
   express.raw({ type: "application/json" }),
   async (req, res) => {
+    console.log("🚨 WEBHOOK HIT");
     let event;
 
     try {
@@ -44,8 +45,6 @@ router.post(
           return { gift: 0, fee: 0, total: 0 };
         }
 
-        // EverPay fee = round(gift * 0.025)
-        // Find the gift amount that produces this exact total
         for (let gift = total; gift >= Math.max(0, total - 100); gift--) {
           const fee = Math.round(gift * 0.025);
           if (gift + fee === total) {
@@ -56,11 +55,8 @@ router.post(
         return { gift: total, fee: 0, total };
       }
 
-      const derived = deriveGiftBreakdownFromTotal(
-        rawTotalPaid ?? stripeTotal
-      );
+      const derived = deriveGiftBreakdownFromTotal(rawTotalPaid ?? stripeTotal);
 
-      // Only trust metadata if it looks internally correct
       const metadataLooksValid =
         Number.isInteger(rawGiftAmount) &&
         Number.isInteger(rawFeeAmount) &&
@@ -68,7 +64,6 @@ router.post(
         rawGiftAmount + rawFeeAmount === rawTotalPaid &&
         rawTotalPaid > 0;
 
-      // If metadata says 205 / 0 / 205, that is not usable for EverPay fee pass-through
       const useMetadata =
         metadataLooksValid &&
         !(rawFeeAmount === 0 && rawGiftAmount === rawTotalPaid && rawTotalPaid === stripeTotal);
