@@ -60,15 +60,10 @@ async function init() {
     )
   `);
 
-  // ✅ Option 2: Gift/Fee/Total tracking (safe + backward compatible)
   await safeAlter(`ALTER TABLE payments ADD COLUMN gift_amount INTEGER`);
   await safeAlter(`ALTER TABLE payments ADD COLUMN fee_amount INTEGER`);
   await safeAlter(`ALTER TABLE payments ADD COLUMN total_paid INTEGER`);
 
-  // ✅ Backfill existing rows so nothing breaks
-  // - treat existing `amount` as gift_amount
-  // - fee defaults to 0
-  // - total defaults to gift
   await db.exec(`
     UPDATE payments
     SET
@@ -98,10 +93,17 @@ const norm = (v) => String(v || "").trim();
 async function storePayment(payment) {
   const db = await dbPromise;
 
-  // ✅ Keep legacy `amount` as GIFT amount (creator-visible)
-  const gift = Number.isInteger(payment.gift_amount) ? payment.gift_amount : payment.amount;
-  const fee = Number.isInteger(payment.fee_amount) ? payment.fee_amount : 0;
-  const total = Number.isInteger(payment.total_paid) ? payment.total_paid : gift + fee;
+  const gift = Number.isInteger(payment.gift_amount)
+    ? payment.gift_amount
+    : payment.amount;
+
+  const fee = Number.isInteger(payment.fee_amount)
+    ? payment.fee_amount
+    : 0;
+
+  const total = Number.isInteger(payment.total_paid)
+    ? payment.total_paid
+    : gift + fee;
 
   return db.run(
     `
@@ -112,10 +114,10 @@ async function storePayment(payment) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     payment.id,
-    gift,          // amount (legacy) = gift
-    gift,          // gift_amount
-    fee,           // fee_amount
-    total,         // total_paid
+    gift,
+    gift,
+    fee,
+    total,
     payment.email,
     payment.creator,
     payment.status,
@@ -129,6 +131,7 @@ async function storePayment(payment) {
 // ---------- Payments ----------
 async function getPayments(limit = 100) {
   const db = await dbPromise;
+
   return db.all(
     `
     SELECT p.*, c.profile_name
@@ -179,7 +182,11 @@ async function getCreatorPayments(username) {
 async function getCreatorByUsername(username) {
   const db = await dbPromise;
   const u = norm(username);
-  return db.get(`SELECT * FROM creators WHERE LOWER(username)=LOWER(?)`, u);
+
+  return db.get(
+    `SELECT * FROM creators WHERE LOWER(username)=LOWER(?)`,
+    u
+  );
 }
 
 async function getCreatorProfile(username) {
@@ -188,7 +195,6 @@ async function getCreatorProfile(username) {
 
 async function saveCreatorProfile(profile) {
   const db = await dbPromise;
-
   const u = norm(profile.username);
 
   return db.run(
@@ -263,10 +269,19 @@ async function updateCreatorUsername(oldUsername, newUsername) {
 async function findCreatorByEmail(email) {
   const db = await dbPromise;
   const cleanEmail = norm(email).toLowerCase();
-  return db.get(`SELECT * FROM creators WHERE LOWER(email)=?`, cleanEmail);
+
+  return db.get(
+    `SELECT * FROM creators WHERE LOWER(email)=?`,
+    cleanEmail
+  );
 }
 
-async function createCreatorWithPassword({ username, email, password, display_name }) {
+async function createCreatorWithPassword({
+  username,
+  email,
+  password,
+  display_name,
+}) {
   const db = await dbPromise;
 
   const cleanUsername = norm(username).toLowerCase();
@@ -281,13 +296,23 @@ async function createCreatorWithPassword({ username, email, password, display_na
   await db.run(
     `
     INSERT INTO creators (
-      username, profile_name, email, password_hash, updated_at
-    ) VALUES (?, ?, ?, ?, ?)
+      username,
+      profile_name,
+      email,
+      password_hash,
+      theme_start,
+      theme_mid,
+      theme_end,
+      updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     cleanUsername,
     display_name || cleanUsername,
     cleanEmail,
     passwordHash,
+    "#0B0D12",
+    "#121826",
+    "#0B0D12",
     new Date().toISOString()
   );
 
