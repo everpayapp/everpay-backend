@@ -89,6 +89,12 @@ router.post("/pay/:username", async (req, res) => {
     // ✅ Get connected Stripe account
     const stripeAccountId = await getStripeAccountId(username);
 
+    if (!stripeAccountId) {
+      return res.status(400).json({
+        error: "Creator has not connected Stripe yet",
+      });
+    }
+
     // ✅ metadata creator MUST be canonical (never %20)
     // ✅ include gift/fee/total so webhook can store correctly (Option 2)
     const meta = {
@@ -136,15 +142,9 @@ router.post("/pay/:username", async (req, res) => {
       },
     };
 
-    // ✅ Destination charge (Pay by Bank still works)
-    if (stripeAccountId) {
-      sessionParams.payment_intent_data = sessionParams.payment_intent_data || {};
-      sessionParams.payment_intent_data.transfer_data = {
-        destination: stripeAccountId,
-      };
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await stripe.checkout.sessions.create(sessionParams, {
+     stripeAccount: stripeAccountId,
+     });
 
     // Safety check
     if (
