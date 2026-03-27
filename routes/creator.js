@@ -89,6 +89,12 @@ router.post("/pay/:username", async (req, res) => {
     // ✅ Get connected Stripe account
     const stripeAccountId = await getStripeAccountId(username);
 
+    if (!stripeAccountId) {
+      return res.status(400).json({
+        error: "Creator has not connected Stripe yet",
+      });
+    }
+
     // ✅ metadata creator MUST be canonical (never %20)
     // ✅ include gift/fee/total so webhook can store correctly (Option 2)
     const meta = {
@@ -102,9 +108,7 @@ router.post("/pay/:username", async (req, res) => {
       fee_amount: String(everpayFee),
       total_paid: String(totalCharge),
 
-      source: stripeAccountId
-        ? "creator-direct-charge"
-        : "creator-platform-charge",
+      source: "creator-direct-charge",
     };
 
     const sessionParams = {
@@ -136,15 +140,9 @@ router.post("/pay/:username", async (req, res) => {
       },
     };
 
-    // ✅ Destination charge (Pay by Bank still works)
-    if (stripeAccountId) {
-      sessionParams.payment_intent_data = sessionParams.payment_intent_data || {};
-      sessionParams.payment_intent_data.transfer_data = {
-        destination: stripeAccountId,
-      };
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await stripe.checkout.sessions.create(sessionParams, {
+      stripeAccount: stripeAccountId,
+    });
 
     // Safety check
     if (
@@ -160,15 +158,22 @@ router.post("/pay/:username", async (req, res) => {
 
     return res.json({
       url: session.url,
-      connected: !!stripeAccountId,
-      stripe_account_id: stripeAccountId || null,
+      connected: true,
+      stripe_account_id: stripeAccountId,
       creator: username,
     });
   } catch (err) {
     console.error("❌ Creator payment session error:", err);
+
     return res.status(500).json({
       error: "Internal server error",
-      stripe_message: err?.message || undefined,
+      stripe_message:
+        err?.raw?.message ||
+        err?.message ||
+        err?.raw?.code ||
+        "Unknown Stripe error",
+      stripe_code: err?.raw?.code || null,
+      stripe_type: err?.type || null,
     });
   }
 });
