@@ -83,9 +83,6 @@ router.post("/pay/:username", async (req, res) => {
     const everpayFee = Math.round(giftAmount * 0.025);
     const totalCharge = giftAmount + everpayFee;
 
-    // ✅ Bank-only for creator gifts
-    const payment_method_types = ["pay_by_bank"];
-
     // ✅ Get connected Stripe account
     const stripeAccountId = await getStripeAccountId(username);
 
@@ -96,14 +93,14 @@ router.post("/pay/:username", async (req, res) => {
     }
 
     // ✅ metadata creator MUST be canonical (never %20)
-    // ✅ include gift/fee/total so webhook can store correctly (Option 2)
+    // ✅ include gift/fee/total so webhook can store correctly
     const meta = {
       creator: username,
       gift_name: supporterName || "",
       gift_message: gift_message || "",
       anonymous: anonymous ? "true" : "false",
 
-      // Option 2 breakdown (all in pence)
+      // breakdown (all in pence)
       gift_amount: String(giftAmount),
       fee_amount: String(everpayFee),
       total_paid: String(totalCharge),
@@ -113,7 +110,6 @@ router.post("/pay/:username", async (req, res) => {
 
     const sessionParams = {
       mode: "payment",
-      payment_method_types,
 
       client_reference_id: `creator:${username}`,
 
@@ -144,23 +140,12 @@ router.post("/pay/:username", async (req, res) => {
       stripeAccount: stripeAccountId,
     });
 
-    // Safety check
-    if (
-      !Array.isArray(session.payment_method_types) ||
-      session.payment_method_types[0] !== "pay_by_bank"
-    ) {
-      console.error("❌ Stripe changed payment methods:", session.payment_method_types);
-      return res.status(500).json({
-        error: "Pay by Bank not available",
-        returned_payment_method_types: session.payment_method_types,
-      });
-    }
-
     return res.json({
       url: session.url,
       connected: true,
       stripe_account_id: stripeAccountId,
       creator: username,
+      payment_method_types: session.payment_method_types || [],
     });
   } catch (err) {
     console.error("❌ Creator payment session error:", err);
