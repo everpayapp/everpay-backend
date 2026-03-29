@@ -14,17 +14,26 @@ router.post(
   async (req, res) => {
     let event;
 
-    try {
-      const signature = req.headers["stripe-signature"];
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (err) {
-      console.error("❌ Webhook signature failed", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+try {
+  const signature = req.headers["stripe-signature"];
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err1) {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_CONNECTED_WEBHOOK_SECRET
+    );
+  }
+} catch (err) {
+  console.error("❌ Webhook signature failed", err.message);
+  return res.status(400).send(`Webhook Error: ${err.message}`);
+}
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
