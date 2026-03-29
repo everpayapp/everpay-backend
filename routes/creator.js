@@ -61,7 +61,6 @@ async function getStripeAccountId(usernameOrName) {
 router.post("/pay/:username", async (req, res) => {
   try {
     const { username: rawUsername } = req.params;
-
     const username = canonicalUsername(rawUsername);
 
     const { amount, supporterName, anonymous, gift_message } = req.body;
@@ -129,6 +128,40 @@ router.post("/pay/:username", async (req, res) => {
     const session = await stripe.checkout.sessions.create(sessionParams, {
       stripeAccount: stripeAccountId,
     });
+
+    // ✅ write the session id back into BOTH session + payment intent metadata
+    const updatedMeta = {
+      ...meta,
+      checkout_session_id: session.id,
+    };
+
+    await stripe.checkout.sessions.update(
+      session.id,
+      {
+        metadata: updatedMeta,
+      },
+      {
+        stripeAccount: stripeAccountId,
+      }
+    );
+
+    // Update the PaymentIntent metadata too, so webhook matching is reliable
+    if (session.payment_intent) {
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent.id;
+
+      await stripe.paymentIntents.update(
+        paymentIntentId,
+        {
+          metadata: updatedMeta,
+        },
+        {
+          stripeAccount: stripeAccountId,
+        }
+      );
+    }
 
     return res.json({
       url: session.url,
