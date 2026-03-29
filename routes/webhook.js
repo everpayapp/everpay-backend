@@ -167,19 +167,20 @@ router.post(
 
       let email = paymentIntent.receipt_email || null;
 
-      try {
+            try {
         if (connectedAccountId) {
-          const charges = await stripe.charges.list(
-            {
-              payment_intent: paymentIntent.id,
-              limit: 1,
-            },
-            {
-              stripeAccount: connectedAccountId,
-            }
-          );
+          let charge = null;
 
-          const charge = charges?.data?.[0] || null;
+          const chargeId =
+            typeof paymentIntent.latest_charge === "string"
+              ? paymentIntent.latest_charge
+              : paymentIntent.latest_charge?.id || null;
+
+          if (chargeId) {
+            charge = await stripe.charges.retrieve(chargeId, {
+              stripeAccount: connectedAccountId,
+            });
+          }
 
           if (charge) {
             if (!email) {
