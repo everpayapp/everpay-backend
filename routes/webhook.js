@@ -29,6 +29,7 @@ router.post(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const meta = session.metadata || {};
+      const connectedAccountId = event.account || null;
 
       const stripeTotal =
         typeof session.amount_total === "number" ? session.amount_total : 0;
@@ -72,31 +73,55 @@ router.post(
       const email = session.customer_details?.email ?? null;
       const timestamp = new Date().toISOString();
 
-      const creator =
-        meta.creator ||
-        session.payment_intent?.metadata?.creator ||
-        session.payment_intent?.charges?.data?.[0]?.metadata?.creator ||
-        "";
-
-      const gift_name =
-        meta.gift_name ||
-        session.payment_intent?.metadata?.gift_name ||
-        session.payment_intent?.charges?.data?.[0]?.metadata?.gift_name ||
-        "";
-
-      const gift_message =
-        meta.gift_message ||
-        session.payment_intent?.metadata?.gift_message ||
-        session.payment_intent?.charges?.data?.[0]?.metadata?.gift_message ||
-        "";
-
-      const anonymous_str =
-        meta.anonymous ||
-        session.payment_intent?.metadata?.anonymous ||
-        session.payment_intent?.charges?.data?.[0]?.metadata?.anonymous ||
-        "false";
-
+      const creator = meta.creator || "";
+      const gift_name = meta.gift_name || "";
+      const gift_message = meta.gift_message || "";
+      const anonymous_str = meta.anonymous || "false";
       const anonymous = anonymous_str === "true";
+
+      let stripeFeeAmount = 0;
+      let netAmount = 0;
+
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id || null;
+
+      if (paymentIntentId && connectedAccountId) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+            stripeAccount: connectedAccountId,
+          });
+
+          const chargeId =
+            typeof pi.latest_charge === "string"
+              ? pi.latest_charge
+              : pi.latest_charge?.id || pi.charges?.data?.[0]?.id || null;
+
+          if (chargeId) {
+            const charge = await stripe.charges.retrieve(chargeId, {
+              stripeAccount: connectedAccountId,
+            });
+
+            const balanceTxId =
+              typeof charge.balance_transaction === "string"
+                ? charge.balance_transaction
+                : charge.balance_transaction?.id || null;
+
+            if (balanceTxId) {
+              const balanceTx = await stripe.balanceTransactions.retrieve(
+                balanceTxId,
+                { stripeAccount: connectedAccountId }
+              );
+
+              stripeFeeAmount = balanceTx.fee || 0;
+              netAmount = balanceTx.net || 0;
+            }
+          }
+        } catch (err) {
+          console.error("❌ Failed to retrieve Stripe fee/net:", err.message || err);
+        }
+      }
 
       try {
         await storePayment({
@@ -105,6 +130,8 @@ router.post(
           gift_amount: gift,
           fee_amount: fee,
           total_paid: total,
+          stripe_fee_amount: stripeFeeAmount,
+          net_amount: netAmount,
           email,
           creator,
           gift_name,
@@ -115,7 +142,7 @@ router.post(
         });
 
         console.log(
-          `💾 Payment recorded → gift £${gift / 100} (fee £${fee / 100}, total £${total / 100}) (creator: ${creator} | name: ${gift_name} | anonymous: ${anonymous})`
+          `💾 Payment recorded → gift £${gift / 100} (fee £${fee / 100}, total £${total / 100}, stripe fee £${stripeFeeAmount / 100}, net £${netAmount / 100}) (creator: ${creator} | name: ${gift_name} | anonymous: ${anonymous})`
         );
       } catch (err) {
         console.error("❌ Failed to store payment:", err);

@@ -63,14 +63,23 @@ async function init() {
   await safeAlter(`ALTER TABLE payments ADD COLUMN gift_amount INTEGER`);
   await safeAlter(`ALTER TABLE payments ADD COLUMN fee_amount INTEGER`);
   await safeAlter(`ALTER TABLE payments ADD COLUMN total_paid INTEGER`);
+  await safeAlter(`ALTER TABLE payments ADD COLUMN stripe_fee_amount INTEGER DEFAULT 0`);
+  await safeAlter(`ALTER TABLE payments ADD COLUMN net_amount INTEGER DEFAULT 0`);
 
   await db.exec(`
     UPDATE payments
     SET
       gift_amount = COALESCE(gift_amount, amount),
-      fee_amount  = COALESCE(fee_amount, 0),
-      total_paid  = COALESCE(total_paid, amount)
-    WHERE gift_amount IS NULL OR fee_amount IS NULL OR total_paid IS NULL;
+      fee_amount = COALESCE(fee_amount, 0),
+      total_paid = COALESCE(total_paid, amount),
+      stripe_fee_amount = COALESCE(stripe_fee_amount, 0),
+      net_amount = COALESCE(net_amount, gift_amount, amount)
+    WHERE
+      gift_amount IS NULL OR
+      fee_amount IS NULL OR
+      total_paid IS NULL OR
+      stripe_fee_amount IS NULL OR
+      net_amount IS NULL;
   `);
 
   await db.exec(`
@@ -105,19 +114,29 @@ async function storePayment(payment) {
     ? payment.total_paid
     : gift + fee;
 
+  const stripeFee = Number.isInteger(payment.stripe_fee_amount)
+    ? payment.stripe_fee_amount
+    : 0;
+
+  const net = Number.isInteger(payment.net_amount)
+    ? payment.net_amount
+    : Math.max(gift - stripeFee, 0);
+
   return db.run(
     `
     INSERT OR REPLACE INTO payments (
-      id, amount, gift_amount, fee_amount, total_paid,
+      id, amount, gift_amount, fee_amount, total_paid, stripe_fee_amount, net_amount,
       email, creator, status, created_at,
       gift_name, anonymous, gift_message
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     payment.id,
     gift,
     gift,
     fee,
     total,
+    stripeFee,
+    net,
     payment.email,
     payment.creator,
     payment.status,
