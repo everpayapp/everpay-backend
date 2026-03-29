@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { storePayment } from "../database.js";
 
 dotenv.config();
+
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -42,9 +43,15 @@ router.post(
       const stripeTotal =
         typeof session.amount_total === "number" ? session.amount_total : 0;
 
-      const rawGiftAmount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
-      const rawFeeAmount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
-      const rawTotalPaid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
+      const rawGiftAmount = meta.gift_amount
+        ? parseInt(meta.gift_amount, 10)
+        : null;
+      const rawFeeAmount = meta.fee_amount
+        ? parseInt(meta.fee_amount, 10)
+        : null;
+      const rawTotalPaid = meta.total_paid
+        ? parseInt(meta.total_paid, 10)
+        : null;
 
       function deriveGiftBreakdownFromTotal(totalPence) {
         const total = Number(totalPence) || 0;
@@ -72,11 +79,9 @@ router.post(
         rawGiftAmount + rawFeeAmount === rawTotalPaid &&
         rawTotalPaid > 0;
 
-      const useMetadata = metadataLooksValid;
-
-      const gift = useMetadata ? rawGiftAmount : derived.gift;
-      const fee = useMetadata ? rawFeeAmount : derived.fee;
-      const total = useMetadata ? rawTotalPaid : derived.total;
+      const gift = metadataLooksValid ? rawGiftAmount : derived.gift;
+      const fee = metadataLooksValid ? rawFeeAmount : derived.fee;
+      const total = metadataLooksValid ? rawTotalPaid : derived.total;
 
       const email = session.customer_details?.email ?? null;
       const timestamp = new Date().toISOString();
@@ -84,8 +89,7 @@ router.post(
       const creator = meta.creator || "";
       const gift_name = meta.gift_name || "";
       const gift_message = meta.gift_message || "";
-      const anonymous_str = meta.anonymous || "false";
-      const anonymous = anonymous_str === "true";
+      const anonymous = (meta.anonymous || "false") === "true";
 
       try {
         await storePayment({
@@ -121,12 +125,17 @@ router.post(
       const creator = meta.creator || "";
       const gift_name = meta.gift_name || "";
       const gift_message = meta.gift_message || "";
-      const anonymous_str = meta.anonymous || "false";
-      const anonymous = anonymous_str === "true";
+      const anonymous = (meta.anonymous || "false") === "true";
 
-      const rawGiftAmount = meta.gift_amount ? parseInt(meta.gift_amount, 10) : null;
-      const rawFeeAmount = meta.fee_amount ? parseInt(meta.fee_amount, 10) : null;
-      const rawTotalPaid = meta.total_paid ? parseInt(meta.total_paid, 10) : null;
+      const rawGiftAmount = meta.gift_amount
+        ? parseInt(meta.gift_amount, 10)
+        : null;
+      const rawFeeAmount = meta.fee_amount
+        ? parseInt(meta.fee_amount, 10)
+        : null;
+      const rawTotalPaid = meta.total_paid
+        ? parseInt(meta.total_paid, 10)
+        : null;
 
       const gift =
         Number.isInteger(rawGiftAmount) && rawGiftAmount > 0
@@ -147,16 +156,16 @@ router.post(
             ? paymentIntent.amount
             : gift + fee;
 
-      const email =
-        paymentIntent.receipt_email ||
-        null;
-
       const timestamp = new Date().toISOString();
 
       let stripeFeeAmount = 0;
       let netAmount = 0;
+
+      // Your live event payload already showed this contains the Checkout Session id.
       let checkoutSessionId =
         paymentIntent.payment_details?.order_reference || null;
+
+      let email = paymentIntent.receipt_email || null;
 
       try {
         if (connectedAccountId) {
@@ -173,6 +182,10 @@ router.post(
           const charge = charges?.data?.[0] || null;
 
           if (charge) {
+            if (!email) {
+              email = charge.billing_details?.email || null;
+            }
+
             const balanceTxId =
               typeof charge.balance_transaction === "string"
                 ? charge.balance_transaction
@@ -181,7 +194,9 @@ router.post(
             if (balanceTxId) {
               const balanceTx = await stripe.balanceTransactions.retrieve(
                 balanceTxId,
-                { stripeAccount: connectedAccountId }
+                {
+                  stripeAccount: connectedAccountId,
+                }
               );
 
               stripeFeeAmount = balanceTx.fee || 0;
