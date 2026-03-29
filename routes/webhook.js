@@ -24,7 +24,7 @@ router.post(
           signature,
           process.env.STRIPE_WEBHOOK_SECRET
         );
-      } catch (err1) {
+      } catch {
         event = stripe.webhooks.constructEvent(
           req.body,
           signature,
@@ -36,60 +36,18 @@ router.post(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // =========================
+    // CHECKOUT SESSION
+    // =========================
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const meta = session.metadata || {};
 
-      const stripeTotal =
-        typeof session.amount_total === "number" ? session.amount_total : 0;
-
-      const rawGiftAmount = meta.gift_amount
-        ? parseInt(meta.gift_amount, 10)
-        : null;
-      const rawFeeAmount = meta.fee_amount
-        ? parseInt(meta.fee_amount, 10)
-        : null;
-      const rawTotalPaid = meta.total_paid
-        ? parseInt(meta.total_paid, 10)
-        : null;
-
-      function deriveGiftBreakdownFromTotal(totalPence) {
-        const total = Number(totalPence) || 0;
-
-        if (!total || total <= 0) {
-          return { gift: 0, fee: 0, total: 0 };
-        }
-
-        for (let gift = total; gift >= Math.max(0, total - 100); gift--) {
-          const fee = Math.round(gift * 0.025);
-          if (gift + fee === total) {
-            return { gift, fee, total };
-          }
-        }
-
-        return { gift: total, fee: 0, total };
-      }
-
-      const derived = deriveGiftBreakdownFromTotal(rawTotalPaid ?? stripeTotal);
-
-      const metadataLooksValid =
-        Number.isInteger(rawGiftAmount) &&
-        Number.isInteger(rawFeeAmount) &&
-        Number.isInteger(rawTotalPaid) &&
-        rawGiftAmount + rawFeeAmount === rawTotalPaid &&
-        rawTotalPaid > 0;
-
-      const gift = metadataLooksValid ? rawGiftAmount : derived.gift;
-      const fee = metadataLooksValid ? rawFeeAmount : derived.fee;
-      const total = metadataLooksValid ? rawTotalPaid : derived.total;
+      const gift = parseInt(meta.gift_amount || 0, 10);
+      const fee = parseInt(meta.fee_amount || 0, 10);
+      const total = parseInt(meta.total_paid || 0, 10);
 
       const email = session.customer_details?.email ?? null;
-      const timestamp = new Date().toISOString();
-
-      const creator = meta.creator || "";
-      const gift_name = meta.gift_name || "";
-      const gift_message = meta.gift_message || "";
-      const anonymous = (meta.anonymous || "false") === "true";
 
       try {
         await storePayment({
@@ -101,140 +59,83 @@ router.post(
           stripe_fee_amount: 0,
           net_amount: 0,
           email,
-          creator,
-          gift_name,
-          gift_message,
-          anonymous: anonymous ? 1 : 0,
+          creator: meta.creator || "",
+          gift_name: meta.gift_name || "",
+          gift_message: meta.gift_message || "",
+          anonymous: meta.anonymous === "true" ? 1 : 0,
           status: session.payment_status || "paid",
-          created_at: timestamp,
+          created_at: new Date().toISOString(),
         });
 
-        console.log(
-          `💾 Checkout session stored → ${session.id} | gift £${gift / 100} (fee £${fee / 100}, total £${total / 100})`
-        );
+        console.log("💾 Stored checkout session:", session.id);
       } catch (err) {
-        console.error("❌ Failed to store checkout session payment:", err);
+        console.error("❌ Checkout store error:", err);
       }
     }
 
+    // =========================
+    // PAYMENT INTENT (FIXED)
+    // =========================
     if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object;
-      const meta = paymentIntent.metadata || {};
+      const pi = event.data.object;
+      const meta = pi.metadata || {};
       const connectedAccountId = event.account || null;
 
-      const creator = meta.creator || "";
-      const gift_name = meta.gift_name || "";
-      const gift_message = meta.gift_message || "";
-      const anonymous = (meta.anonymous || "false") === "true";
-
-      const rawGiftAmount = meta.gift_amount
-        ? parseInt(meta.gift_amount, 10)
-        : null;
-      const rawFeeAmount = meta.fee_amount
-        ? parseInt(meta.fee_amount, 10)
-        : null;
-      const rawTotalPaid = meta.total_paid
-        ? parseInt(meta.total_paid, 10)
-        : null;
-
-      const gift =
-        Number.isInteger(rawGiftAmount) && rawGiftAmount > 0
-          ? rawGiftAmount
-          : typeof paymentIntent.amount_received === "number"
-            ? paymentIntent.amount_received
-            : typeof paymentIntent.amount === "number"
-              ? paymentIntent.amount
-              : 0;
-
-      const fee =
-        Number.isInteger(rawFeeAmount) && rawFeeAmount >= 0 ? rawFeeAmount : 0;
-
-      const total =
-        Number.isInteger(rawTotalPaid) && rawTotalPaid > 0
-          ? rawTotalPaid
-          : typeof paymentIntent.amount === "number"
-            ? paymentIntent.amount
-            : gift + fee;
-
-      const timestamp = new Date().toISOString();
+      console.log("🔎 DEBUG PI:", {
+        id: pi.id,
+        latest_charge: pi.latest_charge,
+        account: connectedAccountId,
+      });
 
       let stripeFeeAmount = 0;
       let netAmount = 0;
 
-      // Your live event payload already showed this contains the Checkout Session id.
-      let checkoutSessionId =
-        paymentIntent.payment_details?.order_reference || null;
+      try {
+        if (connectedAccountId && pi.latest_charge) {
+          const charge = await stripe.charges.retrieve(pi.latest_charge, {
+            stripeAccount: connectedAccountId,
+          });
 
-      let email = paymentIntent.receipt_email || null;
-
-            try {
-        if (connectedAccountId) {
-          let charge = null;
-
-          const chargeId =
-            typeof paymentIntent.latest_charge === "string"
-              ? paymentIntent.latest_charge
-              : paymentIntent.latest_charge?.id || null;
-
-          if (chargeId) {
-            charge = await stripe.charges.retrieve(chargeId, {
+          const balanceTx = await stripe.balanceTransactions.retrieve(
+            charge.balance_transaction,
+            {
               stripeAccount: connectedAccountId,
-            });
-          }
-
-          if (charge) {
-            if (!email) {
-              email = charge.billing_details?.email || null;
             }
+          );
 
-            const balanceTxId =
-              typeof charge.balance_transaction === "string"
-                ? charge.balance_transaction
-                : charge.balance_transaction?.id || null;
-
-            if (balanceTxId) {
-              const balanceTx = await stripe.balanceTransactions.retrieve(
-                balanceTxId,
-                {
-                  stripeAccount: connectedAccountId,
-                }
-              );
-
-              stripeFeeAmount = balanceTx.fee || 0;
-              netAmount = balanceTx.net || 0;
-            }
-          }
+          stripeFeeAmount = balanceTx.fee || 0;
+          netAmount = balanceTx.net || 0;
         }
       } catch (err) {
-        console.error(
-          "❌ Failed to enrich payment_intent.succeeded:",
-          err.message || err
-        );
+        console.error("❌ Fee fetch failed:", err.message);
       }
 
       try {
         await storePayment({
-          id: checkoutSessionId || paymentIntent.id,
-          amount: gift,
-          gift_amount: gift,
-          fee_amount: fee,
-          total_paid: total,
+          id:
+            pi.payment_details?.order_reference ||
+            pi.id,
+          amount: parseInt(meta.gift_amount || 0, 10),
+          gift_amount: parseInt(meta.gift_amount || 0, 10),
+          fee_amount: parseInt(meta.fee_amount || 0, 10),
+          total_paid: parseInt(meta.total_paid || 0, 10),
           stripe_fee_amount: stripeFeeAmount,
           net_amount: netAmount,
-          email,
-          creator,
-          gift_name,
-          gift_message,
-          anonymous: anonymous ? 1 : 0,
+          email: pi.receipt_email || null,
+          creator: meta.creator || "",
+          gift_name: meta.gift_name || "",
+          gift_message: meta.gift_message || "",
+          anonymous: meta.anonymous === "true" ? 1 : 0,
           status: "paid",
-          created_at: timestamp,
+          created_at: new Date().toISOString(),
         });
 
-        console.log(
-          `✅ Payment intent updated → ${checkoutSessionId || paymentIntent.id} | gift £${gift / 100} | stripe fee £${stripeFeeAmount / 100} | net £${netAmount / 100}`
-        );
+        console.log("✅ UPDATED WITH FEES:", {
+          fee: stripeFeeAmount,
+          net: netAmount,
+        });
       } catch (err) {
-        console.error("❌ Failed to store payment_intent update:", err);
+        console.error("❌ Update store error:", err);
       }
     }
 
