@@ -14,26 +14,26 @@ router.post(
   async (req, res) => {
     let event;
 
-try {
-  const signature = req.headers["stripe-signature"];
+    try {
+      const signature = req.headers["stripe-signature"];
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err1) {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_CONNECTED_WEBHOOK_SECRET
-    );
-  }
-} catch (err) {
-  console.error("❌ Webhook signature failed", err.message);
-  return res.status(400).send(`Webhook Error: ${err.message}`);
-}
+      try {
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          signature,
+          process.env.STRIPE_WEBHOOK_SECRET
+        );
+      } catch (err1) {
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          signature,
+          process.env.STRIPE_CONNECTED_WEBHOOK_SECRET
+        );
+      }
+    } catch (err) {
+      console.error("❌ Webhook signature failed", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
@@ -149,29 +149,30 @@ try {
 
       const email =
         paymentIntent.receipt_email ||
-        paymentIntent.charges?.data?.[0]?.billing_details?.email ||
         null;
 
       const timestamp = new Date().toISOString();
 
       let stripeFeeAmount = 0;
       let netAmount = 0;
-      let checkoutSessionId = null;
+      let checkoutSessionId =
+        paymentIntent.payment_details?.order_reference || null;
 
       try {
         if (connectedAccountId) {
-          const chargeId =
-            typeof paymentIntent.latest_charge === "string"
-              ? paymentIntent.latest_charge
-              : paymentIntent.latest_charge?.id ||
-                paymentIntent.charges?.data?.[0]?.id ||
-                null;
-
-          if (chargeId) {
-            const charge = await stripe.charges.retrieve(chargeId, {
+          const charges = await stripe.charges.list(
+            {
+              payment_intent: paymentIntent.id,
+              limit: 1,
+            },
+            {
               stripeAccount: connectedAccountId,
-            });
+            }
+          );
 
+          const charge = charges?.data?.[0] || null;
+
+          if (charge) {
             const balanceTxId =
               typeof charge.balance_transaction === "string"
                 ? charge.balance_transaction
@@ -187,18 +188,6 @@ try {
               netAmount = balanceTx.net || 0;
             }
           }
-
-          const sessions = await stripe.checkout.sessions.list(
-            {
-              payment_intent: paymentIntent.id,
-              limit: 1,
-            },
-            {
-              stripeAccount: connectedAccountId,
-            }
-          );
-
-          checkoutSessionId = sessions?.data?.[0]?.id || null;
         }
       } catch (err) {
         console.error(
