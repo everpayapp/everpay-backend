@@ -158,39 +158,33 @@ router.post(
       const checkoutSessionId =
         meta.checkout_session_id ||
         paymentIntent.payment_details?.order_reference ||
-        null;
+        paymentIntent.id;
 
-      if (!checkoutSessionId) {
+      const email = paymentIntent.receipt_email || null;
+
+      try {
+        await storePayment({
+          id: checkoutSessionId,
+          amount: gift,
+          gift_amount: gift,
+          fee_amount: fee,
+          total_paid: total,
+          stripe_fee_amount: 0,
+          net_amount: 0,
+          email,
+          creator,
+          gift_name,
+          gift_message,
+          anonymous: anonymous ? 1 : 0,
+          status: "paid",
+          created_at: new Date().toISOString(),
+        });
+
         console.log(
-          `⚠️ Skipping payment_intent.succeeded because no checkout session id was resolved for ${paymentIntent.id}`
+          `✅ Payment intent linked → ${checkoutSessionId} | waiting for charge balance transaction`
         );
-      } else {
-        const email = paymentIntent.receipt_email || null;
-
-        try {
-          await storePayment({
-            id: checkoutSessionId,
-            amount: gift,
-            gift_amount: gift,
-            fee_amount: fee,
-            total_paid: total,
-            stripe_fee_amount: 0,
-            net_amount: 0,
-            email,
-            creator,
-            gift_name,
-            gift_message,
-            anonymous: anonymous ? 1 : 0,
-            status: "paid",
-            created_at: new Date().toISOString(),
-          });
-
-          console.log(
-            `✅ Payment intent linked → ${checkoutSessionId} | waiting for charge balance transaction`
-          );
-        } catch (err) {
-          console.error("❌ Failed to store payment_intent update:", err);
-        }
+      } catch (err) {
+        console.error("❌ Failed to store payment_intent update:", err);
       }
     }
 
@@ -202,77 +196,71 @@ router.post(
       const checkoutSessionId =
         meta.checkout_session_id ||
         charge.payment_details?.order_reference ||
-        null;
+        charge.id;
 
-      if (!checkoutSessionId) {
-        console.log(
-          `⚠️ Skipping charge event because no checkout session id was resolved for ${charge.id}`
-        );
-      } else {
-        const creator = meta.creator || "";
-        const gift_name = meta.gift_name || "";
-        const gift_message = meta.gift_message || "";
-        const anonymous = (meta.anonymous || "false") === "true";
+      const creator = meta.creator || "";
+      const gift_name = meta.gift_name || "";
+      const gift_message = meta.gift_message || "";
+      const anonymous = (meta.anonymous || "false") === "true";
 
-        const gift = meta.gift_amount ? parseInt(meta.gift_amount, 10) : 0;
-        const fee = meta.fee_amount ? parseInt(meta.fee_amount, 10) : 0;
-        const total = meta.total_paid ? parseInt(meta.total_paid, 10) : gift + fee;
+      const gift = meta.gift_amount ? parseInt(meta.gift_amount, 10) : 0;
+      const fee = meta.fee_amount ? parseInt(meta.fee_amount, 10) : 0;
+      const total = meta.total_paid ? parseInt(meta.total_paid, 10) : gift + fee;
 
-        let stripeFeeAmount = 0;
-        let netAmount = 0;
+      let stripeFeeAmount = 0;
+      let netAmount = 0;
 
-        try {
-          const balanceTxId =
-            typeof charge.balance_transaction === "string"
-              ? charge.balance_transaction
-              : charge.balance_transaction?.id || null;
+      try {
+        const balanceTxId =
+          typeof charge.balance_transaction === "string"
+            ? charge.balance_transaction
+            : charge.balance_transaction?.id || null;
 
-          console.log("🔎 charge event", {
-            type: event.type,
-            chargeId: charge.id,
-            checkoutSessionId,
+        console.log("🔎 charge event", {
+          type: event.type,
+          chargeId: charge.id,
+          checkoutSessionId,
+          balanceTxId,
+        });
+
+        if (connectedAccountId && balanceTxId) {
+          const balanceTx = await stripe.balanceTransactions.retrieve(
             balanceTxId,
-          });
-
-          if (connectedAccountId && balanceTxId) {
-            const balanceTx = await stripe.balanceTransactions.retrieve(
-              balanceTxId,
-              {
-                stripeAccount: connectedAccountId,
-              }
-            );
-
-            stripeFeeAmount = balanceTx.fee || 0;
-            netAmount = balanceTx.net || 0;
-          }
-        } catch (err) {
-          console.error("❌ Charge fee lookup failed:", err.message || err);
-        }
-
-        try {
-          await storePayment({
-            id: checkoutSessionId,
-            amount: gift,
-            gift_amount: gift,
-            fee_amount: fee,
-            total_paid: total,
-            stripe_fee_amount: stripeFeeAmount,
-            net_amount: netAmount,
-            email: charge.billing_details?.email || null,
-            creator,
-            gift_name,
-            gift_message,
-            anonymous: anonymous ? 1 : 0,
-            status: charge.status || "paid",
-            created_at: new Date().toISOString(),
-          });
-
-          console.log(
-            `✅ Charge updated → ${checkoutSessionId} | stripe fee £${stripeFeeAmount / 100} | net £${netAmount / 100}`
+            {
+              stripeAccount: connectedAccountId,
+            }
           );
-        } catch (err) {
-          console.error("❌ Failed to store charge update:", err);
+
+          stripeFeeAmount = balanceTx.fee || 0;
+          netAmount = balanceTx.net || 0;
         }
+      } catch (err) {
+        console.error("❌ Charge fee lookup failed:", err.message || err);
+      }
+
+      try {
+        await storePayment({
+          id: checkoutSessionId,
+          amount: gift,
+          gift_amount: gift,
+          fee_amount: fee,
+          total_paid: total,
+          stripe_fee_amount: stripeFeeAmount,
+          net_amount: netAmount,
+          email: charge.billing_details?.email || null,
+          creator,
+          gift_name,
+          gift_message,
+          anonymous: anonymous ? 1 : 0,
+          status: charge.status || "paid",
+          created_at: new Date().toISOString(),
+        });
+
+        console.log(
+          `✅ Charge updated → ${checkoutSessionId} | stripe fee £${stripeFeeAmount / 100} | net £${netAmount / 100}`
+        );
+      } catch (err) {
+        console.error("❌ Failed to store charge update:", err);
       }
     }
 
