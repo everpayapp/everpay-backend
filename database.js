@@ -98,6 +98,64 @@ init();
 
 const norm = (v) => String(v || "").trim();
 
+function toMillis(value) {
+  const ms = new Date(value || "").getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function paymentQuality(payment) {
+  const stripeFee = Number(payment?.stripe_fee_amount || 0);
+  const net = Number(payment?.net_amount || 0);
+  if (stripeFee > 0 || net > 0) return 2;
+  return 1;
+}
+
+function sameLogicalPayment(a, b) {
+  const timeDiff = Math.abs(toMillis(a.created_at) - toMillis(b.created_at));
+
+  return (
+    norm(a.creator).toLowerCase() === norm(b.creator).toLowerCase() &&
+    norm(a.email).toLowerCase() === norm(b.email).toLowerCase() &&
+    norm(a.gift_name).toLowerCase() === norm(b.gift_name).toLowerCase() &&
+    norm(a.gift_message) === norm(b.gift_message) &&
+    Number(a.gift_amount || a.amount || 0) === Number(b.gift_amount || b.amount || 0) &&
+    Number(a.fee_amount || 0) === Number(b.fee_amount || 0) &&
+    Number(a.total_paid || 0) === Number(b.total_paid || 0) &&
+    Number(a.anonymous || 0) === Number(b.anonymous || 0) &&
+    timeDiff <= 30000
+  );
+}
+
+function chooseBetterPayment(a, b) {
+  const qa = paymentQuality(a);
+  const qb = paymentQuality(b);
+
+  if (qb > qa) return b;
+  if (qa > qb) return a;
+
+  return toMillis(b.created_at) > toMillis(a.created_at) ? b : a;
+}
+
+function dedupePayments(rows) {
+  const sorted = [...rows].sort(
+    (a, b) => toMillis(b.created_at) - toMillis(a.created_at)
+  );
+
+  const result = [];
+
+  for (const row of sorted) {
+    const existingIndex = result.findIndex((item) => sameLogicalPayment(item, row));
+
+    if (existingIndex === -1) {
+      result.push(row);
+    } else {
+      result[existingIndex] = chooseBetterPayment(result[existingIndex], row);
+    }
+  }
+
+  return result.sort((a, b) => toMillis(b.created_at) - toMillis(a.created_at));
+}
+
 // ---------- Store payment ----------
 async function storePayment(payment) {
   const db = await dbPromise;
@@ -151,7 +209,7 @@ async function storePayment(payment) {
 async function getPayments(limit = 100) {
   const db = await dbPromise;
 
-  return db.all(
+  const rows = await db.all(
     `
     SELECT p.*, c.profile_name
     FROM payments p
@@ -161,13 +219,15 @@ async function getPayments(limit = 100) {
     `,
     limit
   );
+
+  return dedupePayments(rows);
 }
 
 async function getPaymentsByCreator(username, limit = 100) {
   const db = await dbPromise;
   const u = norm(username);
 
-  return db.all(
+  const rows = await db.all(
     `
     SELECT p.*, c.profile_name
     FROM payments p
@@ -179,13 +239,15 @@ async function getPaymentsByCreator(username, limit = 100) {
     u,
     limit
   );
+
+  return dedupePayments(rows);
 }
 
 async function getCreatorPayments(username) {
   const db = await dbPromise;
   const u = norm(username);
 
-  return db.all(
+  const rows = await db.all(
     `
     SELECT p.*, c.profile_name
     FROM payments p
@@ -195,6 +257,8 @@ async function getCreatorPayments(username) {
     `,
     u
   );
+
+  return dedupePayments(rows);
 }
 
 // ---------- Creators ----------
