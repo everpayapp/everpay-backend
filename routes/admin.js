@@ -53,19 +53,36 @@ router.get("/stats", async (req, res) => {
       FROM payments
     `);
 
-    const recentSignups = await db.all(`
-      SELECT
-        username,
-        email,
-        profile_name,
-        stripe_account_id,
-        updated_at
-      FROM creators
-      ORDER BY datetime(updated_at) DESC
-      LIMIT 10
-    `);
+    const recentGifts = await getPayments(12);
 
-    const recentGifts = await getPayments(10);
+    const users = await db.all(`
+      SELECT
+        c.username,
+        c.email,
+        c.profile_name,
+        c.stripe_account_id,
+        c.updated_at,
+        COALESCE(COUNT(p.id), 0) as gifts_count,
+        COALESCE(SUM(COALESCE(p.gift_amount, p.amount)), 0) as gross_volume_pence,
+        COALESCE(SUM(
+          CASE
+            WHEN p.net_amount IS NOT NULL AND p.net_amount > 0 THEN p.net_amount
+            ELSE COALESCE(p.amount, 0)
+          END
+        ), 0) as net_volume_pence,
+        COALESCE(SUM(COALESCE(p.fee_amount, 0)), 0) as everpay_revenue_pence,
+        MAX(p.created_at) as last_gift_at
+      FROM creators c
+      LEFT JOIN payments p
+        ON LOWER(p.creator) = LOWER(c.username)
+      GROUP BY
+        c.username,
+        c.email,
+        c.profile_name,
+        c.stripe_account_id,
+        c.updated_at
+      ORDER BY datetime(c.updated_at) DESC
+    `);
 
     res.json({
       totals: {
@@ -76,7 +93,13 @@ router.get("/stats", async (req, res) => {
         everpay_revenue_pence: Number(everpayRevenueRow?.total || 0),
         total_net_payouts_pence: Number(totalNetPayoutsRow?.total || 0),
       },
-      recent_signups: recentSignups || [],
+      users: (users || []).map((user) => ({
+        ...user,
+        gifts_count: Number(user.gifts_count || 0),
+        gross_volume_pence: Number(user.gross_volume_pence || 0),
+        net_volume_pence: Number(user.net_volume_pence || 0),
+        everpay_revenue_pence: Number(user.everpay_revenue_pence || 0),
+      })),
       recent_gifts: recentGifts || [],
     });
   } catch (err) {
