@@ -17,6 +17,7 @@ import creatorRoutes from "./routes/creator.js";
 import prizePoolRoutes from "./routes/prizePool.js";
 import topSupportersRoutes from "./routes/topSupporters.js";
 import webhookRoutes from "./routes/webhook.js";
+import adminRoutes from "./routes/admin.js";
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/creator", creatorProfileRoutes);
 app.use("/api/creator", avatarRoutes);
 app.use("/creator", creatorRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ✅ Connect endpoints
 app.use("/api/stripe", stripeConnectRoutes);
