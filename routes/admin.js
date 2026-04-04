@@ -1,6 +1,6 @@
 // ~/everpay-backend/routes/admin.js
 import express from "express";
-import dbPromise from "../database.js";
+import dbPromise, { getPayments } from "../database.js";
 
 const router = express.Router();
 
@@ -65,23 +65,7 @@ router.get("/stats", async (req, res) => {
       LIMIT 10
     `);
 
-    const recentGifts = await db.all(`
-      SELECT
-        id,
-        creator,
-        gift_name,
-        anonymous,
-        gift_message,
-        gift_amount,
-        fee_amount,
-        stripe_fee_amount,
-        net_amount,
-        created_at,
-        status
-      FROM payments
-      ORDER BY datetime(created_at) DESC
-      LIMIT 10
-    `);
+    const recentGifts = await getPayments(10);
 
     res.json({
       totals: {
