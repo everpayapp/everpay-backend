@@ -63,6 +63,27 @@ async function setStripeAccountId(usernameOrName, stripe_account_id) {
   );
 }
 
+/**
+ * Decide if an existing connected account should be thrown away
+ * and replaced with a fresh one.
+ */
+function shouldReplaceAccount(account) {
+  const disabledReason = account?.requirements?.disabled_reason || "";
+
+  if (!disabledReason) return false;
+
+  // Stripe has rejected or permanently blocked this account
+  if (
+    disabledReason.includes("rejected") ||
+    disabledReason.includes("listed") ||
+    disabledReason.includes("fraud") ||
+    disabledReason.includes("other")
+  ) {
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * GET /api/stripe/connect/status?username=lee
@@ -84,6 +105,7 @@ router.get("/connect/status", async (req, res) => {
     const requirementsDue = Array.isArray(account.requirements?.currently_due)
       ? account.requirements.currently_due
       : [];
+    const disabledReason = account.requirements?.disabled_reason || null;
 
     return res.json({
       connected: true,
@@ -91,6 +113,7 @@ router.get("/connect/status", async (req, res) => {
       chargesEnabled,
       payoutsEnabled,
       requirementsDue,
+      disabledReason,
     });
   } catch (err) {
     console.error("❌ connect/status error:", err);
@@ -112,7 +135,28 @@ router.post("/connect/create", async (req, res) => {
 
     let accountId = creator.stripe_account_id;
 
-    // Create account if missing
+    // If an account already exists, check whether Stripe has rejected it
+    if (accountId) {
+      try {
+        const existingAccount = await stripe.accounts.retrieve(accountId);
+
+        if (shouldReplaceAccount(existingAccount)) {
+          console.log(
+            "⚠️ Existing Stripe account rejected/unusable, creating a fresh one:",
+            accountId
+          );
+          accountId = null;
+        }
+      } catch (err) {
+        console.log(
+          "⚠️ Failed to retrieve existing Stripe account, creating a fresh one:",
+          accountId
+        );
+        accountId = null;
+      }
+    }
+
+    // Create account if missing or rejected
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: "express",
@@ -142,7 +186,14 @@ router.post("/connect/create", async (req, res) => {
     return res.json({ url: accountLink.url, stripe_account_id: accountId });
   } catch (err) {
     console.error("❌ connect/create error:", err);
-    return res.status(500).json({ error: "Failed to create Connect link" });
+    console.error("❌ Stripe raw message:", err?.message);
+    console.error("❌ Stripe raw type:", err?.type);
+    console.error("❌ Stripe raw code:", err?.code);
+
+    return res.status(500).json({
+      error: "Failed to create Connect link",
+      details: err?.message || "Unknown error",
+    });
   }
 });
 
