@@ -14,6 +14,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+const MIN_AMOUNT_PENCE = 50;
+const MAX_AMOUNT_PENCE = 100000; // £1,000 max
+const MAX_SUPPORTER_NAME_LENGTH = 80;
+const MAX_GIFT_MESSAGE_LENGTH = 300;
+
 /* ------------------ helpers ------------------ */
 
 function canonicalUsername(input) {
@@ -29,6 +34,14 @@ function canonicalUsername(input) {
   } catch {}
 
   return plusFixed.trim();
+}
+
+function cleanText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function toBoolean(value) {
+  return value === true || value === "true" || value === 1 || value === "1";
 }
 
 async function getStripeAccountId(usernameOrName) {
@@ -63,20 +76,33 @@ router.post("/pay/:username", async (req, res) => {
     const { username: rawUsername } = req.params;
     const username = canonicalUsername(rawUsername);
 
-    const { amount, supporterName, anonymous, gift_message } = req.body;
+    if (!username) {
+      return res.status(400).json({ error: "Missing creator username" });
+    }
 
-    const amountInt = Number(amount);
+    const amountInt = Number(req.body?.amount);
+    const supporterName = cleanText(
+      req.body?.supporterName,
+      MAX_SUPPORTER_NAME_LENGTH
+    );
+    const giftMessage = cleanText(
+      req.body?.gift_message,
+      MAX_GIFT_MESSAGE_LENGTH
+    );
+    const anonymous = toBoolean(req.body?.anonymous);
 
-    if (!Number.isFinite(amountInt) || amountInt < 50) {
+    if (!Number.isFinite(amountInt) || amountInt < MIN_AMOUNT_PENCE) {
       return res.status(400).json({ error: "Invalid amount (min 50p)" });
     }
 
-    // ✅ fee logic
+    if (amountInt > MAX_AMOUNT_PENCE) {
+      return res.status(400).json({ error: "Amount too high" });
+    }
+
     const giftAmount = Math.round(amountInt);
     const everpayFee = Math.round(giftAmount * 0.025);
     const totalCharge = giftAmount + everpayFee;
 
-    // ✅ get connected account
     const stripeAccountId = await getStripeAccountId(username);
 
     if (!stripeAccountId) {
@@ -85,11 +111,29 @@ router.post("/pay/:username", async (req, res) => {
       });
     }
 
-    // ✅ metadata (for webhook + DB)
+    let connectedAccount;
+    try {
+      connectedAccount = await stripe.accounts.retrieve(stripeAccountId);
+    } catch (err) {
+      console.error("❌ Failed to retrieve connected account:", err);
+      return res.status(400).json({
+        error: "Creator Stripe account could not be verified",
+      });
+    }
+
+    if (
+      connectedAccount?.requirements?.disabled_reason &&
+      connectedAccount.requirements.disabled_reason.includes("rejected")
+    ) {
+      return res.status(400).json({
+        error: "Creator Stripe account needs to be reconnected",
+      });
+    }
+
     const meta = {
       creator: username,
-      gift_name: supporterName || "",
-      gift_message: gift_message || "",
+      gift_name: supporterName,
+      gift_message: giftMessage,
       anonymous: anonymous ? "true" : "false",
       gift_amount: String(giftAmount),
       fee_amount: String(everpayFee),
@@ -113,10 +157,18 @@ router.post("/pay/:username", async (req, res) => {
         },
       ],
 
-      success_url: `${FRONTEND_URL}/creator/${encodeURIComponent(username)}?success=true`,
-      cancel_url: `${FRONTEND_URL}/creator/${encodeURIComponent(username)}?cancel=true`,
+      success_url: `${FRONTEND_URL}/creator/${encodeURIComponent(
+        username
+      )}?success=true`,
+      cancel_url: `${FRONTEND_URL}/creator/${encodeURIComponent(
+        username
+      )}?cancel=true`,
 
       metadata: meta,
+
+      automatic_payment_methods: {
+        enabled: true,
+      },
 
       payment_intent_data: {
         metadata: meta,
@@ -124,12 +176,10 @@ router.post("/pay/:username", async (req, res) => {
       },
     };
 
-    // ✅ DIRECT CHARGE (final setup)
     const session = await stripe.checkout.sessions.create(sessionParams, {
       stripeAccount: stripeAccountId,
     });
 
-    // ✅ write the session id back into BOTH session + payment intent metadata
     const updatedMeta = {
       ...meta,
       checkout_session_id: session.id,
@@ -145,7 +195,6 @@ router.post("/pay/:username", async (req, res) => {
       }
     );
 
-    // Update the PaymentIntent metadata too, so webhook matching is reliable
     if (session.payment_intent) {
       const paymentIntentId =
         typeof session.payment_intent === "string"
@@ -171,16 +220,12 @@ router.post("/pay/:username", async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Creator payment session error:", err);
+    console.error("❌ Stripe raw message:", err?.raw?.message || err?.message);
+    console.error("❌ Stripe raw code:", err?.raw?.code || null);
+    console.error("❌ Stripe raw type:", err?.type || null);
 
     return res.status(500).json({
-      error: "Internal server error",
-      stripe_message:
-        err?.raw?.message ||
-        err?.message ||
-        err?.raw?.code ||
-        "Unknown Stripe error",
-      stripe_code: err?.raw?.code || null,
-      stripe_type: err?.type || null,
+      error: "Could not start payment right now",
     });
   }
 });
