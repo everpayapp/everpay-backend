@@ -166,10 +166,6 @@ router.post("/pay/:username", async (req, res) => {
 
       metadata: meta,
 
-      automatic_payment_methods: {
-        enabled: true,
-      },
-
       payment_intent_data: {
         metadata: meta,
         application_fee_amount: everpayFee,
