@@ -100,7 +100,7 @@ router.post("/pay/:username", async (req, res) => {
     }
 
     const giftAmount = Math.round(amountInt);
-    const everpayFee = Math.round(giftAmount * 0.025);
+    const everpayFee = Math.round(giftAmount *  0.03 + 30);
     const totalCharge = giftAmount + everpayFee;
 
     const stripeAccountId = await getStripeAccountId(username);
