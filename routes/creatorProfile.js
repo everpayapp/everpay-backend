@@ -153,7 +153,13 @@ router.post("/profile/update", async (req, res) => {
         ? 1
         : 0;
 
-    const profile_name = body.profile_name ?? "";
+    const profile_name = String(body.profile_name ?? "").trim();
+
+    if (profile_name.length > 20) {
+    return res.status(400).json({
+    error: "Profile name must be 20 characters or fewer",
+     });
+    }
     const bio = body.bio ?? "";
     const avatar_url = body.avatar_url ?? "";
     const theme_start = body.theme_start ?? null;
@@ -225,7 +231,7 @@ router.post("/profile/update", async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `,
         slug || incoming,
-        profile_name || (slug || incoming),
+        profile_name || (slug || incoming).slice(0, 20),
         bio,
         avatar_url,
         normalizedLinks,
