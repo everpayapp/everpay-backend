@@ -74,9 +74,10 @@ router.get("/profile", async (req, res) => {
         milestone_enabled,
         milestone_amount,
         milestone_text,
+        thank_you_video,
         updated_at
-      FROM creators
-      WHERE
+        FROM creators
+        WHERE
         username IN (${candidates.map(() => "?").join(", ")})
         OR LOWER(username) = LOWER(?)
         OR LOWER(username) = LOWER(?)
@@ -112,6 +113,7 @@ router.get("/profile", async (req, res) => {
       milestone_enabled: result.milestone_enabled ?? 0,
       milestone_amount: result.milestone_amount ?? 0,
       milestone_text: result.milestone_text ?? "",
+      thank_you_video: result.thank_you_video ?? "",
     });
   } catch (err) {
     console.error("Creator profile error:", err);

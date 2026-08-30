@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import avatarRoutes from "./routes/avatar.js";
+import thankYouVideoRoutes from "./routes/thankYouVideo.js";
 
 // ✅ Stripe Connect routes
 import stripeConnectRoutes from "./routes/stripeConnect.js";
@@ -73,6 +74,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/creator", creatorProfileRoutes);
 app.use("/api/creator", avatarRoutes);
+app.use("/api/creator", thankYouVideoRoutes);
 app.use("/creator", creatorRoutes);
 app.use("/api/admin", adminRoutes);
 

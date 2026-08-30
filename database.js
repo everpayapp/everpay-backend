@@ -45,6 +45,9 @@ async function init() {
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_token TEXT`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN reset_expires TEXT`);
   await safeAlter(`ALTER TABLE creators ADD COLUMN stripe_account_id TEXT`);
+  await safeAlter(
+    `ALTER TABLE creators ADD COLUMN thank_you_video TEXT DEFAULT ''`
+  );
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS payments (
@@ -333,6 +336,25 @@ async function updateCreatorAvatarUrl(username, avatarUrl) {
   return true;
 }
 
+async function updateCreatorThankYouVideo(username, videoUrl) {
+  const db = await dbPromise;
+  const u = norm(username);
+  const cleanVideoUrl = norm(videoUrl);
+
+  await db.run(
+    `
+    UPDATE creators
+    SET thank_you_video=?, updated_at=?
+    WHERE LOWER(username)=LOWER(?)
+    `,
+    cleanVideoUrl,
+    new Date().toISOString(),
+    u
+  );
+
+  return true;
+}
+
 async function updateCreatorUsername(oldUsername, newUsername) {
   const db = await dbPromise;
 
@@ -416,6 +438,7 @@ export {
   getCreatorProfile,
   saveCreatorProfile,
   updateCreatorAvatarUrl,
+  updateCreatorThankYouVideo,
   updateCreatorUsername,
   findCreatorByEmail,
   createCreatorWithPassword,
